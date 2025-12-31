@@ -25,6 +25,15 @@ enum NavigationItem: String, CaseIterable, Identifiable {
         case .go: return "g.circle"
         }
     }
+    
+    var color: Color {
+        switch self {
+        case .java: return .orange
+        case .node: return .green
+        case .python: return .indigo
+        case .go: return .cyan
+        }
+    }
 }
 
 struct ContentView: View {
@@ -34,20 +43,54 @@ struct ContentView: View {
     @ObservedObject var goManager: GoManager
     
     @State private var selection: NavigationItem? = .java
+    @State private var hoveredItem: NavigationItem? = nil
     
     var body: some View {
         NavigationSplitView {
             List(selection: $selection) {
-                Section(header: Text("Dev Environments")) {
+                Section {
                     ForEach(NavigationItem.allCases) { item in
                         NavigationLink(value: item) {
-                            Label(item.title, systemImage: item.icon)
+                            HStack(spacing: 10) {
+                                Image(systemName: item.icon)
+                                    .font(.system(size: 18))
+                                    .foregroundColor(selection == item ? item.color : .secondary)
+                                    .frame(width: 24)
+                                
+                                Text(item.title)
+                                    .font(.body)
+                                    .fontWeight(.medium)
+                            }
+                            .padding(.vertical, 4)
                         }
+                        .listRowBackground(
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(selection == item ? item.color.opacity(0.15) : Color.clear)
+                                
+                                if selection == item {
+                                    HStack {
+                                        Rectangle()
+                                            .fill(item.color)
+                                            .frame(width: 3)
+                                        Spacer()
+                                    }
+                                }
+                            }
+                        )
+                        .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
                     }
+                } header: {
+                    Text("Dev Environments")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 8)
+                        .padding(.bottom, 4)
                 }
             }
             .listStyle(.sidebar)
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
+            .navigationSplitViewColumnWidth(min: 200, ideal: 220)
             .navigationTitle("DevManager")
         } detail: {
             switch selection {
@@ -60,11 +103,18 @@ struct ContentView: View {
             case .go:
                 GoView(manager: goManager)
             case .none:
-                Text("Select a language")
-                    .foregroundColor(.secondary)
+                VStack(spacing: 16) {
+                    Image(systemName: "app.dashed")
+                        .font(.system(size: 48))
+                        .foregroundColor(.secondary.opacity(0.5))
+                    Text("Select a language")
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .frame(minWidth: 700, minHeight: 500)
+        .frame(minWidth: 800, idealWidth: 1200, minHeight: 600, idealHeight: 800)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

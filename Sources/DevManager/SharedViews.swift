@@ -1,4 +1,167 @@
+import AppKit
 import SwiftUI
+
+// MARK: - Modern Card-based Version Display
+
+struct ModernVersionCard: View {
+    let version: String
+    let source: String
+    let path: String
+    let isActive: Bool
+    let icon: String
+    let color: Color
+    let onUse: () -> Void
+    let onOpenFinder: () -> Void
+
+    @State private var isHovered = false
+    @State private var showCopied = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Top section with icon and version
+            HStack(alignment: .top, spacing: 12) {
+                // Icon circle
+                ZStack {
+                    Circle()
+                        .fill(isActive ? color.opacity(0.2) : Color.gray.opacity(0.1))
+                        .frame(width: 48, height: 48)
+
+                    Image(systemName: icon)
+                        .font(.system(size: 24))
+                        .foregroundColor(isActive ? color : (isHovered ? color : .gray))
+                }
+
+                // Version info
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Text(version)
+                            .font(.headline)
+                            .fontWeight(.semibold)
+
+                        if isActive {
+                            Text("CURRENT")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(color)
+                                .cornerRadius(4)
+                        }
+                    }
+
+                    Text(source)
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+
+                // Right side: checkmark or action buttons
+                if isActive {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(color)
+                } else {
+                    HStack(spacing: 8) {
+                        Button(action: onUse) {
+                            Text("Use")
+                                .font(.callout)
+                                .fontWeight(.medium)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(color)
+
+                        Button(action: onOpenFinder) {
+                            Image(systemName: "folder")
+                                .font(.system(size: 14))
+                        }
+                        .buttonStyle(.borderless)
+                        .foregroundColor(.secondary)
+                    }
+                    .opacity(isHovered ? 1 : 0)
+                }
+            }
+            .padding(16)
+
+            // Divider
+            Divider()
+                .padding(.horizontal, 16)
+
+            // Info section
+            VStack(alignment: .leading, spacing: 8) {
+                // Path info
+                HStack(spacing: 6) {
+                    Image(systemName: "folder.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+
+                    Text(path)
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+
+                    Spacer()
+
+                    Button(action: {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(path, forType: .string)
+                        showCopied = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            showCopied = false
+                        }
+                    }) {
+                        Image(systemName: showCopied ? "checkmark" : "doc.on.doc")
+                            .font(.system(size: 12))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundColor(showCopied ? color : .secondary)
+                    .help("Copy path")
+                }
+            }
+            .padding(16)
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(isActive ? color.opacity(0.08) : Color(NSColor.controlBackgroundColor))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(
+                    isActive ? color.opacity(0.4) : Color.gray.opacity(0.1),
+                    lineWidth: isActive ? 2 : 1)
+        )
+        .shadow(
+            color: Color.black.opacity(isHovered || isActive ? 0.08 : 0),
+            radius: isHovered ? 8 : (isActive ? 6 : 0),
+            x: 0,
+            y: isHovered ? 4 : (isActive ? 2 : 0)
+        )
+        .scaleEffect(isHovered && !isActive ? 1.02 : 1.0)
+        .onHover { hovering in
+            withAnimation(.easeOut(duration: 0.25)) {
+                isHovered = hovering
+            }
+        }
+        .contextMenu {
+            Button("Use This Version") {
+                onUse()
+            }
+            .disabled(isActive)
+
+            Button("Copy Path") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(path, forType: .string)
+            }
+
+            Button("Reveal in Finder") {
+                onOpenFinder()
+            }
+        }
+    }
+}
+
+// MARK: - Legacy Version Card (kept for compatibility)
 
 struct VersionCard: View {
     let version: String
@@ -8,26 +171,26 @@ struct VersionCard: View {
     let icon: String
     let color: Color
     let action: () -> Void
-    
+
     @State private var isHovered = false
-    
+
     var body: some View {
         HStack(spacing: 16) {
             ZStack {
                 Circle()
                     .fill(isActive ? color.opacity(0.2) : Color.gray.opacity(0.1))
                     .frame(width: 48, height: 48)
-                
+
                 Image(systemName: icon)
                     .font(.system(size: 24))
                     .foregroundColor(isActive ? color : .gray)
             }
-            
+
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text(version)
                         .font(.headline)
-                    
+
                     if let badge = badge {
                         Text(badge)
                             .font(.system(size: 10, weight: .bold))
@@ -36,7 +199,7 @@ struct VersionCard: View {
                             .background(Color.secondary.opacity(0.1))
                             .cornerRadius(4)
                     }
-                    
+
                     if isActive {
                         Text("Current")
                             .font(.system(size: 10, weight: .bold))
@@ -47,16 +210,16 @@ struct VersionCard: View {
                             .cornerRadius(4)
                     }
                 }
-                
+
                 Text(path)
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
             }
-            
+
             Spacer()
-            
+
             if isActive {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.title2)
@@ -88,45 +251,216 @@ struct VersionCard: View {
 
 struct ConfigHintView: View {
     let filename: String
-    
+    @State private var showCopied = false
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Divider()
-            
-            HStack {
-                Image(systemName: "terminal.fill")
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: "gearshape.fill")
+                    .font(.system(size: 14))
                     .foregroundColor(.secondary)
-                Text("Setup required:")
+                Text("Setup Required")
                     .font(.caption)
-                    .fontWeight(.bold)
+                    .fontWeight(.semibold)
                     .foregroundColor(.secondary)
                 Spacer()
             }
-            .padding(.top, 8)
-            
-            HStack {
+
+            HStack(spacing: 12) {
                 Text("source ~/.config/devmanager/\(filename)")
                     .font(.system(.caption, design: .monospaced))
-                    .padding(8)
-                    .background(Color(NSColor.textBackgroundColor))
-                    .cornerRadius(6)
+                    .foregroundColor(.primary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color(NSColor.textBackgroundColor).opacity(0.5))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.secondary.opacity(0.15), lineWidth: 1)
+                    )
                     .textSelection(.enabled)
-                
-                Spacer()
-                
+
                 Button(action: {
                     let pasteboard = NSPasteboard.general
                     pasteboard.clearContents()
-                    pasteboard.setString("source ~/.config/devmanager/\(filename)", forType: .string)
+                    pasteboard.setString(
+                        "source ~/.config/devmanager/\(filename)", forType: .string)
+                    showCopied = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        showCopied = false
+                    }
                 }) {
-                    Image(systemName: "doc.on.doc")
-                        .font(.system(size: 12))
+                    Image(systemName: showCopied ? "checkmark" : "doc.on.doc")
+                        .font(.system(size: 16))
                 }
                 .buttonStyle(.plain)
+                .foregroundColor(showCopied ? .green : .secondary)
                 .help("Copy to clipboard")
             }
         }
-        .padding()
-        .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+        .padding(20)
+        .background(.ultraThinMaterial)
+        .overlay(
+            Rectangle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(height: 1),
+            alignment: .top
+        )
+    }
+}
+
+// MARK: - Modern Header View
+
+struct ModernHeaderView: View {
+    let title: String
+    let icon: String
+    let color: Color
+    let activeVersion: String?
+    let activeSource: String?
+    let activePath: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Title with icon
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 28))
+                    .foregroundColor(color)
+
+                Text(title)
+                    .font(.title)
+                    .fontWeight(.bold)
+            }
+
+            // Active version card or empty state
+            if let version = activeVersion, let source = activeSource, let path = activePath {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) {
+                        Text("Current Version")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(color)
+                            .cornerRadius(6)
+
+                        Text(version)
+                            .font(.headline)
+                            .fontWeight(.bold)
+                    }
+
+                    Text(source)
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+
+                    HStack(spacing: 6) {
+                        Image(systemName: "folder.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+
+                        Text(path)
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
+                }
+                .padding(16)
+                .frame(maxWidth: 600, alignment: .leading)
+                .background(
+                    LinearGradient(
+                        colors: [color.opacity(0.08), color.opacity(0.12)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(color.opacity(0.3), lineWidth: 1)
+                )
+                .overlay(
+                    Rectangle()
+                        .fill(color)
+                        .frame(width: 4),
+                    alignment: .leading
+                )
+            } else {
+                HStack(spacing: 12) {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 18))
+                        .foregroundColor(.secondary)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("No version selected")
+                            .font(.callout)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
+                        Text("Choose a version to generate environment configuration")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding(16)
+                .frame(maxWidth: 600)
+                .background(Color.secondary.opacity(0.05))
+                .cornerRadius(12)
+            }
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.ultraThinMaterial)
+        .overlay(
+            Rectangle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(height: 1),
+            alignment: .bottom
+        )
+    }
+}
+
+// MARK: - Modern Empty State
+
+struct ModernEmptyState: View {
+    let icon: String
+    let title: String
+    let message: String
+    let color: Color
+    let onRefresh: () -> Void
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Image(systemName: icon)
+                .font(.system(size: 60))
+                .foregroundColor(.secondary.opacity(0.5))
+
+            Text(title)
+                .font(.headline)
+                .foregroundColor(.primary)
+
+            Text(message)
+                .font(.callout)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+
+            Button(action: onRefresh) {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 14))
+                    Text("Refresh")
+                        .fontWeight(.medium)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 8)
+            }
+            .buttonStyle(.bordered)
+            .tint(color)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(40)
     }
 }

@@ -48,6 +48,10 @@ struct GoView: View {
         .navigationTitle("Go")
         .toolbar {
             ToolbarItemGroup {
+                ManageVersionsButton(language: .go) {
+                    manager.refresh()
+                }
+
                 Button {
                     manager.refresh()
                 } label: {

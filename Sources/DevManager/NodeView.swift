@@ -48,6 +48,10 @@ struct NodeView: View {
         .navigationTitle("Node.js")
         .toolbar {
             ToolbarItemGroup {
+                ManageVersionsButton(language: .node) {
+                    manager.refresh()
+                }
+
                 Button {
                     manager.refresh()
                 } label: {

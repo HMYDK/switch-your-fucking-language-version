@@ -8,6 +8,20 @@ It gives you a single UI to discover installed runtimes, switch between them, an
 - **Native macOS UI**
   - Built with SwiftUI, using NavigationSplitView + Table.
   - Resizable window with a sidebar for languages and a detail pane with rich tables.
+  - Modern card-based version display with official language icons.
+
+- **Version Install/Uninstall** (via Homebrew)
+  - Install new versions directly from Homebrew without leaving the app.
+  - **Dynamic version discovery**: Automatically queries Homebrew for all available versions using `brew search`.
+  - Supported languages:
+    - **Node.js**: `node`, `node@18`, `node@20`, `node@22`, `node@24`, etc.
+    - **Java**: `openjdk`, `openjdk@8`, `openjdk@11`, `openjdk@17`, `openjdk@21`, etc.
+    - **Python**: `python@3.9`, `python@3.10`, `python@3.11`, `python@3.12`, `python@3.13`, `python@3.14`, etc.
+    - **Go**: `go`, `go@1.20`, `go@1.21`, `go@1.22`, `go@1.23`, `go@1.24`, etc.
+  - New versions are automatically available when Homebrew adds them.
+  - Real-time download progress display.
+  - Uninstall installed Homebrew versions with one click.
+  - Homebrew-installed versions are marked with a 🍺 badge in the list.
 
 - **Java**
   - Discovers JDKs via `/usr/libexec/java_home -X`.
@@ -41,6 +55,7 @@ It gives you a single UI to discover installed runtimes, switch between them, an
 
 - macOS 13.0 or later  
 - Swift 5.9+
+- Homebrew (optional, required for Install/Uninstall feature)
 
 ## How to Run
 

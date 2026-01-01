@@ -48,6 +48,10 @@ struct PythonView: View {
         .navigationTitle("Python")
         .toolbar {
             ToolbarItemGroup {
+                ManageVersionsButton(language: .python) {
+                    manager.refresh()
+                }
+
                 Button {
                     manager.refresh()
                 } label: {

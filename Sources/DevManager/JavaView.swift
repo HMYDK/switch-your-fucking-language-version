@@ -48,6 +48,10 @@ struct JavaView: View {
         .navigationTitle("Java")
         .toolbar {
             ToolbarItemGroup {
+                ManageVersionsButton(language: .java) {
+                    manager.refresh()
+                }
+
                 Button {
                     manager.refresh()
                 } label: {

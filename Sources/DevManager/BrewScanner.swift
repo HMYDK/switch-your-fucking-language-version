@@ -105,7 +105,9 @@ enum BrewScanner {
         let fileManager = FileManager.default
         var results: [(String, String, String)] = []
 
-        for installed in scanFormulae(prefix: "python@") {
+        for installed in scanFormulae(prefix: "python") {
+            // 只处理带版本号的 python，如 python@3.13，跳过纯 python
+            guard installed.formulaName.contains("@") else { continue }
             let binPath = (installed.cellarPath as NSString).appendingPathComponent("bin")
 
             // Python 的可执行文件可能是 python3, python3.x, 或 python

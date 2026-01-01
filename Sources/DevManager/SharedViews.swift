@@ -1,6 +1,42 @@
 import AppKit
 import SwiftUI
 
+// MARK: - Source Tag View
+
+struct SourceTagView: View {
+    let source: String
+
+    private var isHomebrew: Bool {
+        source.lowercased().contains("homebrew")
+    }
+
+    var body: some View {
+        if isHomebrew {
+            HStack(spacing: 4) {
+                Image(systemName: "mug.fill")
+                    .font(.system(size: 10, weight: .semibold))
+                Text("Homebrew")
+                    .font(.system(size: 11, weight: .medium))
+            }
+            .foregroundColor(Color(red: 0.95, green: 0.55, blue: 0.15))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color(red: 0.95, green: 0.55, blue: 0.15).opacity(0.12))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(Color(red: 0.95, green: 0.55, blue: 0.15).opacity(0.3), lineWidth: 1)
+            )
+        } else {
+            Text(source)
+                .font(.callout)
+                .foregroundColor(.secondary)
+        }
+    }
+}
+
 // MARK: - Language Icon View
 
 struct LanguageIconView: View {
@@ -70,9 +106,7 @@ struct ModernVersionCard: View {
                         }
                     }
 
-                    Text(source)
-                        .font(.callout)
-                        .foregroundColor(.secondary)
+                    SourceTagView(source: source)
                 }
 
                 Spacer()
@@ -372,9 +406,7 @@ struct ModernHeaderView: View {
                             .fontWeight(.bold)
                     }
 
-                    Text(source)
-                        .font(.callout)
-                        .foregroundColor(.secondary)
+                    SourceTagView(source: source)
 
                     HStack(spacing: 6) {
                         Image(systemName: "folder.fill")

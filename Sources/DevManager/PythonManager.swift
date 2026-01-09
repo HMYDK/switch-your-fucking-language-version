@@ -1,14 +1,15 @@
 import Combine
 import Foundation
 
-struct PythonVersion: Identifiable, Hashable {
+struct PythonVersion: LanguageVersion, Hashable {
     let id = UUID()
     let path: String
     let version: String
     let source: String
 }
 
-class PythonManager: ObservableObject {
+class PythonManager: ObservableObject, LanguageManager {
+    typealias Version = PythonVersion
     @Published var installedVersions: [PythonVersion] = []
     @Published var activeVersion: PythonVersion?
 

@@ -1,14 +1,15 @@
 import Combine
 import Foundation
 
-struct GoVersion: Identifiable, Hashable {
+struct GoVersion: LanguageVersion, Hashable {
     let id = UUID()
     let path: String
     let version: String
     let source: String
 }
 
-class GoManager: ObservableObject {
+class GoManager: ObservableObject, LanguageManager {
+    typealias Version = GoVersion
     @Published var installedVersions: [GoVersion] = []
     @Published var activeVersion: GoVersion?
 

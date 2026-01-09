@@ -6,15 +6,27 @@ struct DevManagerApp: App {
     @StateObject private var nodeManager = NodeManager()
     @StateObject private var pythonManager = PythonManager()
     @StateObject private var goManager = GoManager()
+    @StateObject private var registry = LanguageRegistry()
 
+    init() {
+        // 注册所有语言
+        setupRegistry()
+    }
+    
+    private func setupRegistry() {
+        // 注意:这里在init中调用,需要延迟到body中执行
+    }
+    
     var body: some Scene {
         WindowGroup {
-            ContentView(
-                javaManager: javaManager,
-                nodeManager: nodeManager,
-                pythonManager: pythonManager,
-                goManager: goManager
-            )
+            ContentView(registry: registry)
+                .onAppear {
+                    // 在视图出现时注册语言
+                    registry.register(metadata: .java, manager: javaManager)
+                    registry.register(metadata: .node, manager: nodeManager)
+                    registry.register(metadata: .python, manager: pythonManager)
+                    registry.register(metadata: .go, manager: goManager)
+                }
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.automatic)
@@ -40,10 +52,10 @@ struct DevManagerApp: App {
             // Tools 菜单
             CommandMenu("Tools") {
                 Button("Refresh All") {
-                    javaManager.refresh()
-                    nodeManager.refresh()
-                    pythonManager.refresh()
-                    goManager.refresh()
+                    // 刷新所有已注册的语言
+                    for language in registry.allLanguages {
+                        language.manager.refresh()
+                    }
                 }
                 .keyboardShortcut("r", modifiers: .command)
             }

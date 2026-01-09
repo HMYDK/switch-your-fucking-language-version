@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 
 enum NavigationItem: String, CaseIterable, Identifiable {
+    case dashboard
     case java
     case node
     case python
@@ -11,6 +12,7 @@ enum NavigationItem: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
+        case .dashboard: return "Dashboard"
         case .java: return "Java JDK"
         case .node: return "Node.js"
         case .python: return "Python"
@@ -20,15 +22,24 @@ enum NavigationItem: String, CaseIterable, Identifiable {
 
     var iconImage: String {
         switch self {
+        case .dashboard: return "" // Dashboard uses SF Symbol
         case .java: return "java"
         case .node: return "nodejs"
         case .python: return "python"
         case .go: return "go"
         }
     }
+    
+    var iconSymbol: String? {
+        switch self {
+        case .dashboard: return "chart.bar.horizontal.fill"
+        default: return nil
+        }
+    }
 
     var color: Color {
         switch self {
+        case .dashboard: return .blue
         case .java: return .orange
         case .node: return .green
         case .python: return .indigo
@@ -38,23 +49,59 @@ enum NavigationItem: String, CaseIterable, Identifiable {
 }
 
 struct ContentView: View {
-    @ObservedObject var javaManager: JavaManager
-    @ObservedObject var nodeManager: NodeManager
-    @ObservedObject var pythonManager: PythonManager
-    @ObservedObject var goManager: GoManager
+    @ObservedObject var registry: LanguageRegistry
+    @StateObject private var dashboardViewModel: DashboardViewModel
 
-    @State private var selection: NavigationItem? = .java
-    @State private var hoveredItem: NavigationItem? = nil
+    @State private var selection: String? = "dashboard"
+    @State private var hoveredItem: String? = nil
+    
+    init(registry: LanguageRegistry) {
+        self.registry = registry
+        _dashboardViewModel = StateObject(wrappedValue: DashboardViewModel(registry: registry))
+    }
 
     var body: some View {
         NavigationSplitView {
             List(selection: $selection) {
                 Section {
-                    ForEach(NavigationItem.allCases) { item in
-                        NavigationLink(value: item) {
+                    // Dashboard
+                    NavigationLink(value: "dashboard") {
+                        HStack(spacing: 10) {
+                            Image(systemName: "chart.bar.horizontal.fill")
+                                .font(.system(size: 16))
+                                .frame(width: 20, height: 20)
+
+                            Text("Dashboard")
+                                .font(.body)
+                                .fontWeight(.medium)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    .listRowBackground(
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(
+                                    selection == "dashboard" ? Color.blue.opacity(0.15) : Color.clear)
+
+                            if selection == "dashboard" {
+                                HStack {
+                                    Rectangle()
+                                        .fill(Color.blue)
+                                        .frame(width: 3)
+                                    Spacer()
+                                }
+                            }
+                        }
+                    )
+                    .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
+                    
+                    // 语言项
+                    ForEach(registry.allLanguages) { language in
+                        let metadata = language.metadata
+                        NavigationLink(value: metadata.id) {
                             HStack(spacing: 10) {
                                 if let url = Bundle.module.url(
-                                    forResource: item.iconImage, withExtension: "png"),
+                                    forResource: metadata.iconName, withExtension: "png"),
                                     let nsImage = NSImage(contentsOf: url)
                                 {
                                     Image(nsImage: nsImage)
@@ -63,7 +110,7 @@ struct ContentView: View {
                                         .frame(width: 20, height: 20)
                                 }
 
-                                Text(item.title)
+                                Text(metadata.displayName)
                                     .font(.body)
                                     .fontWeight(.medium)
                             }
@@ -73,12 +120,12 @@ struct ContentView: View {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 8)
                                     .fill(
-                                        selection == item ? item.color.opacity(0.15) : Color.clear)
+                                        selection == metadata.id ? metadata.color.opacity(0.15) : Color.clear)
 
-                                if selection == item {
+                                if selection == metadata.id {
                                     HStack {
                                         Rectangle()
-                                            .fill(item.color)
+                                            .fill(metadata.color)
                                             .frame(width: 3)
                                         Spacer()
                                     }
@@ -100,16 +147,18 @@ struct ContentView: View {
             .navigationSplitViewColumnWidth(min: 200, ideal: 220)
             .navigationTitle("DevManager")
         } detail: {
-            switch selection {
-            case .java:
-                JavaView(manager: javaManager)
-            case .node:
-                NodeView(manager: nodeManager)
-            case .python:
-                PythonView(manager: pythonManager)
-            case .go:
-                GoView(manager: goManager)
-            case .none:
+            if selection == "dashboard" {
+                DashboardView(
+                    viewModel: dashboardViewModel,
+                    selection: $selection
+                )
+            } else if let languageId = selection,
+                      let language = registry.getLanguage(for: languageId) {
+                GenericLanguageView(
+                    metadata: language.metadata,
+                    manager: language.manager
+                )
+            } else {
                 VStack(spacing: 16) {
                     Image(systemName: "app.dashed")
                         .font(.system(size: 48))

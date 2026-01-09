@@ -1,14 +1,19 @@
 import Combine
 import Foundation
 
-struct JavaVersion: Identifiable, Hashable {
+struct JavaVersion: LanguageVersion, Hashable {
     let id = UUID()
     let homePath: String
     let name: String
     let version: String
+    
+    // LanguageVersion 协议要求
+    var path: String { homePath }
+    var source: String { name }
 }
 
-class JavaManager: ObservableObject {
+class JavaManager: ObservableObject, LanguageManager {
+    typealias Version = JavaVersion
     @Published var installedVersions: [JavaVersion] = []
     @Published var activeVersion: JavaVersion?
 

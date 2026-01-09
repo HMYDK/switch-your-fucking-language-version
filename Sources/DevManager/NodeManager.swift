@@ -1,14 +1,15 @@
 import Combine
 import Foundation
 
-struct NodeVersion: Identifiable, Hashable {
+struct NodeVersion: LanguageVersion, Hashable {
     let id = UUID()
     let path: String
     let version: String  // e.g., "v18.16.0"
     let source: String  // e.g., "Homebrew", "NVM"
 }
 
-class NodeManager: ObservableObject {
+class NodeManager: ObservableObject, LanguageManager {
+    typealias Version = NodeVersion
     @Published var installedVersions: [NodeVersion] = []
     @Published var activeVersion: NodeVersion?
 

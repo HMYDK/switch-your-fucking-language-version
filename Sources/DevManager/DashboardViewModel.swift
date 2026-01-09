@@ -12,7 +12,7 @@ struct LanguageStatus: Identifiable {
     let activeVersion: String?
     let activeSource: String?
     let installedCount: Int
-    
+
     var isConfigured: Bool {
         activeVersion != nil
     }
@@ -22,45 +22,51 @@ struct LanguageStatus: Identifiable {
 
 class DashboardViewModel: ObservableObject {
     @Published private(set) var languageStatuses: [LanguageStatus] = []
-    
+
     private let registry: LanguageRegistry
     private var cancellables = Set<AnyCancellable>()
-    
+    private var managerCancellables = Set<AnyCancellable>()
+    private var observedManagerIds = Set<String>()
+
     init(registry: LanguageRegistry) {
         self.registry = registry
-        
-        // 监听 registry 的变化
+
+        // 监听 registry 的变化，并重新设置 manager observers
         registry.$languages
             .sink { [weak self] _ in
+                self?.setupManagerObservers()
                 self?.updateStatuses()
             }
             .store(in: &cancellables)
-        
+
         // 初始化状态
         updateStatuses()
-        
+
         // 监听每个语言管理器的变化
         setupManagerObservers()
     }
-    
+
     private func setupManagerObservers() {
-        // 监听所有语言管理器的变化
+        // 只为新增的语言管理器添加监听
         for language in registry.allLanguages {
+            guard !observedManagerIds.contains(language.id) else { continue }
+            observedManagerIds.insert(language.id)
+
             language.manager.objectWillChange
                 .sink { [weak self] _ in
                     DispatchQueue.main.async {
                         self?.updateStatuses()
                     }
                 }
-                .store(in: &cancellables)
+                .store(in: &managerCancellables)
         }
     }
-    
+
     private func updateStatuses() {
         languageStatuses = registry.allLanguages.map { language in
             let metadata = language.metadata
             let manager = language.manager
-            
+
             return LanguageStatus(
                 id: metadata.id,
                 displayName: metadata.displayName,
@@ -72,7 +78,7 @@ class DashboardViewModel: ObservableObject {
             )
         }
     }
-    
+
     var hasAnyConfigured: Bool {
         languageStatuses.contains { $0.isConfigured }
     }

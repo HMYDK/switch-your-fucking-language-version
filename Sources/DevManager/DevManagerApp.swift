@@ -12,11 +12,11 @@ struct DevManagerApp: App {
         // 注册所有语言
         setupRegistry()
     }
-    
+
     private func setupRegistry() {
         // 注意:这里在init中调用,需要延迟到body中执行
     }
-    
+
     var body: some Scene {
         WindowGroup {
             ContentView(registry: registry)

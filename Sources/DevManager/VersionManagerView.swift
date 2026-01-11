@@ -11,6 +11,22 @@ class VersionInstallViewModel: ObservableObject {
     @Published var currentOperation: String?
     @Published var downloadProgress: Double? = nil  // 下载进度 0-100
     @Published var errorMessage: String? = nil  // 错误信息
+    @Published var operationResult: OperationResult? = nil  // 操作结果
+    @Published var installingFormula: String? = nil  // 正在安装的formula
+    @Published var currentStage: InstallStage = .idle  // 当前安装阶段
+
+    enum OperationResult {
+        case success(String)  // 成功消息
+        case failure(String)  // 失败消息
+    }
+
+    enum InstallStage: String {
+        case idle = ""
+        case downloading = "Downloading..."
+        case installing = "Installing..."
+        case linking = "Linking..."
+        case cleanup = "Cleaning up..."
+    }
 
     let language: LanguageType
 
@@ -37,9 +53,10 @@ class VersionInstallViewModel: ObservableObject {
         defer { isLoading = false }
 
         let brew = BrewService.shared
-        
+
         guard brew.isAvailable else {
-            errorMessage = "Homebrew is not installed or not found in PATH. Please install Homebrew first."
+            errorMessage =
+                "Homebrew is not installed or not found in PATH. Please install Homebrew first."
             remoteVersions = []
             return
         }
@@ -54,43 +71,66 @@ class VersionInstallViewModel: ObservableObject {
         case .go:
             remoteVersions = await brew.fetchGoVersions()
         }
-        
+
         // 如果获取到空数组，设置错误信息
         if remoteVersions.isEmpty && errorMessage == nil {
-            errorMessage = "No versions found. This might be due to:\n• Network connectivity issues\n• Homebrew formula repository not updated\n• No matching formulae available\n\nTry running 'brew update' in Terminal."
+            errorMessage =
+                "No versions found. This might be due to:\n• Network connectivity issues\n• Homebrew formula repository not updated\n• No matching formulae available\n\nTry running 'brew update' in Terminal."
         }
     }
 
     func install(version: RemoteVersion) async -> Bool {
         isInstalling = true
+        installingFormula = version.formula
         currentOperation = "Installing \(version.displayName)..."
         installProgress = ""
         downloadProgress = nil
+        operationResult = nil
+        currentStage = .downloading
 
         let success = await BrewService.shared.install(formula: version.formula) { output in
             self.processOutput(output)
         }
 
         isInstalling = false
+        installingFormula = nil
         currentOperation = nil
-        downloadProgress = nil
+        currentStage = .idle
+
+        if success {
+            operationResult = .success("\(version.displayName) installed successfully")
+        } else {
+            operationResult = .failure(
+                "Failed to install \(version.displayName). Check the log for details.")
+        }
 
         return success
     }
 
     func uninstall(version: RemoteVersion) async -> Bool {
         isInstalling = true
+        installingFormula = version.formula
         currentOperation = "Uninstalling \(version.displayName)..."
         installProgress = ""
         downloadProgress = nil
+        operationResult = nil
+        currentStage = .cleanup
 
         let success = await BrewService.shared.uninstall(formula: version.formula) { output in
             self.processOutput(output)
         }
 
         isInstalling = false
+        installingFormula = nil
         currentOperation = nil
-        downloadProgress = nil
+        currentStage = .idle
+
+        if success {
+            operationResult = .success("\(version.displayName) uninstalled successfully")
+        } else {
+            operationResult = .failure(
+                "Failed to uninstall \(version.displayName). Check the log for details.")
+        }
 
         return success
     }
@@ -107,6 +147,18 @@ class VersionInstallViewModel: ObservableObject {
             downloadProgress = percent
         }
 
+        // 检测安装阶段
+        let lowerOutput = output.lowercased()
+        if lowerOutput.contains("downloading") || lowerOutput.contains("fetching") {
+            currentStage = .downloading
+        } else if lowerOutput.contains("pouring") || lowerOutput.contains("installing") {
+            currentStage = .installing
+        } else if lowerOutput.contains("linking") || lowerOutput.contains("symlink") {
+            currentStage = .linking
+        } else if lowerOutput.contains("cleaning") || lowerOutput.contains("removing") {
+            currentStage = .cleanup
+        }
+
         // 过滤掉进度行 (包含 # 或纯百分比的行)
         let lines = output.components(separatedBy: .newlines)
         for line in lines {
@@ -121,6 +173,11 @@ class VersionInstallViewModel: ObservableObject {
                 installProgress += line + "\n"
             }
         }
+    }
+
+    func clearResult() {
+        operationResult = nil
+        downloadProgress = nil
     }
 }
 
@@ -218,7 +275,7 @@ struct VersionManagerSheet: View {
                         Text("No versions available")
                             .font(.headline)
                             .foregroundColor(.secondary)
-                        
+
                         if let errorMessage = viewModel.errorMessage {
                             Text(errorMessage)
                                 .font(.caption)
@@ -226,7 +283,7 @@ struct VersionManagerSheet: View {
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal)
                         }
-                        
+
                         Button("Retry") {
                             Task {
                                 await viewModel.fetchVersions()
@@ -244,6 +301,8 @@ struct VersionManagerSheet: View {
                                 RemoteVersionRow(
                                     version: version,
                                     isOperating: viewModel.isInstalling,
+                                    isCurrentlyInstalling: viewModel.installingFormula
+                                        == version.formula,
                                     accent: viewModel.accentColor,
                                     onInstall: {
                                         Task {
@@ -274,13 +333,38 @@ struct VersionManagerSheet: View {
                 }
 
                 // 操作进度区域
-                if viewModel.isInstalling || showProgress {
+                if viewModel.isInstalling || showProgress || viewModel.operationResult != nil {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
+                            // 操作结果提示
+                            if let result = viewModel.operationResult {
+                                switch result {
+                                case .success(let message):
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(.green)
+                                        Text(message)
+                                            .font(.callout)
+                                            .fontWeight(.medium)
+                                            .foregroundColor(.green)
+                                    }
+                                case .failure(let message):
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundColor(.red)
+                                        Text(message)
+                                            .font(.callout)
+                                            .fontWeight(.medium)
+                                            .foregroundColor(.red)
+                                    }
+                                }
+                            }
+
                             Spacer()
                             Button {
                                 showProgress = false
                                 viewModel.installProgress = ""
+                                viewModel.clearResult()
                             } label: {
                                 Image(systemName: "xmark.circle.fill")
                                     .font(.system(size: 16, weight: .semibold))
@@ -305,9 +389,12 @@ struct VersionManagerSheet: View {
                         if let progress = viewModel.downloadProgress {
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack {
-                                    Text("Downloading...")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
+                                    Text(
+                                        viewModel.currentStage.rawValue.isEmpty
+                                            ? "Downloading..." : viewModel.currentStage.rawValue
+                                    )
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
                                     Spacer()
                                     Text(String(format: "%.1f%%", progress))
                                         .font(.caption)
@@ -386,6 +473,7 @@ struct VersionManagerSheet: View {
 struct RemoteVersionRow: View {
     let version: RemoteVersion
     let isOperating: Bool
+    let isCurrentlyInstalling: Bool  // 是否正在安装此版本
     let accent: Color
     let onInstall: () -> Void
     let onUninstall: () -> Void
@@ -400,9 +488,14 @@ struct RemoteVersionRow: View {
                     .fill(accent.opacity(0.12))
                     .frame(width: 48, height: 48)
 
-                Image(systemName: "cube.box.fill")
-                    .font(.system(size: 24))
-                    .foregroundColor(accent)
+                if isCurrentlyInstalling {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                } else {
+                    Image(systemName: "cube.box.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(accent)
+                }
             }
 
             VStack(alignment: .leading, spacing: 4) {
@@ -425,7 +518,15 @@ struct RemoteVersionRow: View {
 
             Spacer()
 
-            if version.isInstalled {
+            if isCurrentlyInstalling {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .scaleEffect(0.7)
+                    Text("Installing...")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            } else if version.isInstalled {
                 HStack(spacing: 8) {
                     Text("Installed")
                         .font(.caption)

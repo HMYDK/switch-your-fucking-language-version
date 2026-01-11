@@ -4,6 +4,7 @@ import SwiftUI
 struct DashboardView: View {
     @ObservedObject var viewModel: DashboardViewModel
     @Binding var selection: ContentView.Route?
+    @ObservedObject private var updateChecker = UpdateChecker.shared
 
     @State private var isQuickStartExpanded: Bool
 
@@ -41,7 +42,11 @@ struct DashboardView: View {
                     title: "Environments",
                     subtitle: "Select a language to manage versions"
                 ) {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 240, maximum: 300), spacing: DMSpace.l)], spacing: DMSpace.l) {
+                    LazyVGrid(
+                        columns: [
+                            GridItem(.adaptive(minimum: 240, maximum: 300), spacing: DMSpace.l)
+                        ], spacing: DMSpace.l
+                    ) {
                         ForEach(sortedStatuses) { status in
                             EnvironmentCard(status: status) {
                                 withAnimation(.easeOut(duration: 0.18)) {
@@ -63,20 +68,23 @@ struct DashboardView: View {
                                     symbol: "hand.tap.fill",
                                     accent: .blue,
                                     title: "Select a version",
-                                    detail: "Open a language on the left and press Use on the version you want."
+                                    detail:
+                                        "Open a language on the left and press Use on the version you want."
                                 )
 
                                 QuickStartStep(
                                     symbol: "terminal.fill",
                                     accent: .purple,
                                     title: "Configure your shell",
-                                    detail: "Add the snippet below to your shell config file (for example ~/.zshrc)."
+                                    detail:
+                                        "Add the snippet below to your shell config file (for example ~/.zshrc)."
                                 ) {
                                     DMCodeBlock(
                                         text: shellConfig,
                                         onCopy: {
                                             NSPasteboard.general.clearContents()
-                                            NSPasteboard.general.setString(shellConfig, forType: .string)
+                                            NSPasteboard.general.setString(
+                                                shellConfig, forType: .string)
                                         }
                                     )
                                 }
@@ -131,6 +139,9 @@ struct DashboardView: View {
             }
 
             Spacer()
+
+            // Version Info
+            VersionStatusView(updateChecker: updateChecker)
         }
     }
 
@@ -142,16 +153,17 @@ struct DashboardView: View {
             if lhs.installedCount != rhs.installedCount {
                 return lhs.installedCount > rhs.installedCount
             }
-            return lhs.displayName.localizedCaseInsensitiveCompare(rhs.displayName) == .orderedAscending
+            return lhs.displayName.localizedCaseInsensitiveCompare(rhs.displayName)
+                == .orderedAscending
         }
     }
 
     private let shellConfig = """
-    # RuntimePilot - Development Environment Manager
-    for env_file in ~/.config/devmanager/*_env.sh; do
-        [ -f "$env_file" ] && source "$env_file"
-    done
-    """
+        # RuntimePilot - Development Environment Manager
+        for env_file in ~/.config/devmanager/*_env.sh; do
+            [ -f "$env_file" ] && source "$env_file"
+        done
+        """
 }
 
 private struct QuickStartStep<Content: View>: View {
@@ -278,7 +290,9 @@ private struct EnvironmentCard: View {
             .cornerRadius(DMRadius.card)
             .overlay(
                 RoundedRectangle(cornerRadius: DMRadius.card)
-                    .stroke(isHovered ? status.color.opacity(0.5) : Color.primary.opacity(0.06), lineWidth: isHovered ? 2 : 1)
+                    .stroke(
+                        isHovered ? status.color.opacity(0.5) : Color.primary.opacity(0.06),
+                        lineWidth: isHovered ? 2 : 1)
             )
             .scaleEffect(isHovered ? 1.02 : 1.0)
             .animation(.easeOut(duration: 0.2), value: isHovered)
@@ -293,5 +307,97 @@ private struct EnvironmentCard: View {
 extension QuickStartStep where Content == EmptyView {
     init(symbol: String, accent: Color, title: String, detail: String) {
         self.init(symbol: symbol, accent: accent, title: title, detail: detail) { EmptyView() }
+    }
+}
+
+// MARK: - Version Status View
+
+private struct VersionStatusView: View {
+    @ObservedObject var updateChecker: UpdateChecker
+    @State private var isHovered = false
+
+    private var hasUpdate: Bool {
+        updateChecker.updateInfo?.isUpdateAvailable ?? false
+    }
+
+    private var latestVersion: String? {
+        updateChecker.updateInfo?.latestVersion
+    }
+
+    var body: some View {
+        Button {
+            if hasUpdate {
+                updateChecker.openReleasePage()
+            } else {
+                Task {
+                    await updateChecker.checkForUpdates(force: true)
+                }
+            }
+        } label: {
+            HStack(spacing: DMSpace.s) {
+                // Version info
+                VStack(alignment: .trailing, spacing: 2) {
+                    HStack(spacing: 4) {
+                        if hasUpdate {
+                            Image(systemName: "arrow.down.circle.fill")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.green)
+                        }
+                        Text("v\(updateChecker.currentVersion)")
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundStyle(.primary)
+                    }
+
+                    // Status text
+                    Group {
+                        if updateChecker.isChecking {
+                            HStack(spacing: 4) {
+                                ProgressView()
+                                    .scaleEffect(0.5)
+                                    .frame(width: 10, height: 10)
+                                Text("Checking...")
+                            }
+                        } else if hasUpdate, let latest = latestVersion {
+                            Text("v\(latest) available")
+                                .foregroundStyle(.green)
+                        } else if updateChecker.updateInfo != nil {
+                            HStack(spacing: 4) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(.green)
+                                Text("Up to date")
+                            }
+                        } else {
+                            Text("Check for updates")
+                        }
+                    }
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+                }
+
+                // Chevron
+                Image(systemName: hasUpdate ? "arrow.up.right" : "arrow.clockwise")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(hasUpdate ? .green : .secondary)
+            }
+            .padding(.horizontal, DMSpace.m)
+            .padding(.vertical, DMSpace.s)
+            .background(
+                RoundedRectangle(cornerRadius: DMRadius.control)
+                    .fill(hasUpdate ? Color.green.opacity(0.1) : Color.primary.opacity(0.05))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DMRadius.control)
+                    .stroke(
+                        hasUpdate ? Color.green.opacity(0.3) : Color.primary.opacity(0.1),
+                        lineWidth: 1)
+            )
+            .scaleEffect(isHovered ? 1.02 : 1.0)
+            .animation(.easeOut(duration: 0.15), value: isHovered)
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            isHovered = hovering
+        }
+        .help(hasUpdate ? "Download new version" : "Check for updates")
     }
 }

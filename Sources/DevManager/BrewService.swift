@@ -4,55 +4,124 @@ import Foundation
 class BrewService {
     static let shared = BrewService()
 
-    private let brewPath: String
+    private let brewPath: String?
 
     private init() {
-        // 检测 Homebrew 路径
-        if FileManager.default.fileExists(atPath: "/opt/homebrew/bin/brew") {
-            brewPath = "/opt/homebrew/bin/brew"
-        } else if FileManager.default.fileExists(atPath: "/usr/local/bin/brew") {
-            brewPath = "/usr/local/bin/brew"
-        } else {
-            brewPath = "brew"
-        }
+        brewPath = Self.resolveBrewPath()
     }
 
     /// 检查 Homebrew 是否可用
     var isAvailable: Bool {
-        FileManager.default.fileExists(atPath: brewPath)
+        brewPath != nil
     }
 
     // MARK: - 远程版本获取
 
     /// 搜索 Homebrew 中匹配的 formula
+    /// 注意：brew search 不支持正则表达式，所以我们需要使用不同的策略
     private func searchFormulae(pattern: String) async -> [String] {
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: brewPath)
-        task.arguments = ["search", "/\(pattern)/"]
+        guard let brewPath else { return [] }
+        let brewExecutable = brewPath
 
-        let pipe = Pipe()
-        task.standardOutput = pipe
-        task.standardError = Pipe()
+        return await Task.detached(priority: .userInitiated) {
+            // 由于 brew search 不支持正则表达式，我们使用简单的文本搜索
+            // 然后手动过滤结果
+            let searchTerm: String
+            if pattern.hasPrefix("^") && pattern.hasSuffix("$") {
+                // 提取模式中的主要搜索词
+                // 去掉 ^ 和 $ 后，找到第一个非字母数字字符的位置，截取之前的部分
+                var cleanPattern =
+                    pattern
+                    .replacingOccurrences(of: "^", with: "")
+                    .replacingOccurrences(of: "$", with: "")
 
-        do {
-            try task.run()
-            task.waitUntilExit()
+                // 对于 "node(@[0-9]+)?" -> "node"
+                // 对于 "openjdk(@[0-9]+)?" -> "openjdk"
+                // 对于 "python@3\\.[0-9]+" -> "python"
+                // 对于 "go(@[0-9.]+)?" -> "go"
+                if let firstSpecialIndex = cleanPattern.firstIndex(where: {
+                    $0 == "@" || $0 == "(" || $0 == "\\"
+                }) {
+                    cleanPattern = String(cleanPattern[..<firstSpecialIndex])
+                }
 
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            guard let output = String(data: data, encoding: .utf8) else {
-                return []
+                searchTerm = cleanPattern.isEmpty ? pattern : cleanPattern
+            } else {
+                searchTerm = pattern
             }
 
-            // 解析输出，每行一个 formula
-            return
-                output
-                .components(separatedBy: .newlines)
-                .map { $0.trimmingCharacters(in: .whitespaces) }
-                .filter { !$0.isEmpty && !$0.contains("==>") }
-        } catch {
-            print("Error searching formulae: \(error)")
-            return []
-        }
+            let task = Process()
+            task.executableURL = URL(fileURLWithPath: brewExecutable)
+            task.arguments = ["search", searchTerm]
+
+            let pipe = Pipe()
+            let errorPipe = Pipe()
+            task.standardOutput = pipe
+            task.standardError = errorPipe
+
+            do {
+                try task.run()
+
+                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
+                task.waitUntilExit()
+
+                // 检查错误输出
+                if let errorOutput = String(data: errorData, encoding: .utf8), !errorOutput.isEmpty
+                {
+                    print("Brew search error: \(errorOutput)")
+                }
+
+                guard task.terminationStatus == 0,
+                    let output = String(data: data, encoding: .utf8)
+                else {
+                    print("Brew search failed with status: \(task.terminationStatus)")
+                    return []
+                }
+
+                let lines = output.components(separatedBy: .newlines)
+                var results: [String] = []
+
+                // 编译正则表达式用于过滤
+                guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+                    print("Invalid regex pattern: \(pattern)")
+                    return []
+                }
+
+                for line in lines {
+                    let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+                    if trimmedLine.isEmpty || trimmedLine.contains("==>") { continue }
+
+                    let parts = line.components(separatedBy: .whitespaces)
+                    for part in parts {
+                        let cleanPart = part.trimmingCharacters(in: .whitespaces)
+                        if !cleanPart.isEmpty && cleanPart != "✔" {
+                            // 使用正则表达式过滤结果
+                            let range = NSRange(cleanPart.startIndex..., in: cleanPart)
+                            if regex.firstMatch(in: cleanPart, options: [], range: range) != nil {
+                                results.append(cleanPart)
+                            }
+                        }
+                    }
+                }
+
+                var seen = Set<String>()
+                let filtered = results.filter { seen.insert($0).inserted }
+
+                if filtered.isEmpty {
+                    print(
+                        "No formulae found matching pattern: \(pattern) (searched for: \(searchTerm))"
+                    )
+                } else {
+                    print("Found \(filtered.count) formulae matching pattern: \(pattern)")
+                }
+
+                return filtered
+            } catch {
+                print("Error searching formulae: \(error)")
+                return []
+            }
+        }.value
     }
 
     /// 获取 Node.js 可用版本（动态查询）
@@ -61,9 +130,10 @@ class BrewService {
 
         // 搜索所有 node 相关的 formula: node, node@xx
         let formulae = await searchFormulae(pattern: "^node(@[0-9]+)?$")
+        let infos = await getBatchFormulaeInfo(formulae)
 
         for formula in formulae {
-            if let info = await getFormulaInfo(formula) {
+            if let info = infos[formula] {
                 let isLatest = formula == "node"
                 versions.append(
                     RemoteVersion(
@@ -76,12 +146,15 @@ class BrewService {
             }
         }
 
-        // 按版本号排序（Latest 排最前）
-        return versions.sorted { v1, v2 in
-            if v1.formula == "node" { return true }
-            if v2.formula == "node" { return false }
-            return v1.formula > v2.formula
-        }
+        let limit = 6
+        return Array(
+            versions.sorted { v1, v2 in
+                if v1.formula == "node" { return v2.formula != "node" }
+                if v2.formula == "node" { return false }
+                return v1.version.compare(v2.version, options: .numeric) == .orderedDescending
+            }
+            .prefix(limit)
+        )
     }
 
     /// 获取 Java 可用版本（动态查询）
@@ -90,9 +163,10 @@ class BrewService {
 
         // 搜索所有 openjdk 相关的 formula
         let formulae = await searchFormulae(pattern: "^openjdk(@[0-9]+)?$")
+        let infos = await getBatchFormulaeInfo(formulae)
 
         for formula in formulae {
-            if let info = await getFormulaInfo(formula) {
+            if let info = infos[formula] {
                 let isLatest = formula == "openjdk"
                 versions.append(
                     RemoteVersion(
@@ -105,11 +179,15 @@ class BrewService {
             }
         }
 
-        return versions.sorted { v1, v2 in
-            if v1.formula == "openjdk" { return true }
-            if v2.formula == "openjdk" { return false }
-            return v1.formula > v2.formula
-        }
+        let limit = 6
+        return Array(
+            versions.sorted { v1, v2 in
+                if v1.formula == "openjdk" { return v2.formula != "openjdk" }
+                if v2.formula == "openjdk" { return false }
+                return v1.version.compare(v2.version, options: .numeric) == .orderedDescending
+            }
+            .prefix(limit)
+        )
     }
 
     /// 获取 Python 可用版本（动态查询）
@@ -118,9 +196,10 @@ class BrewService {
 
         // 搜索所有 python@x.x 的 formula
         let formulae = await searchFormulae(pattern: "^python@3\\.[0-9]+$")
+        let infos = await getBatchFormulaeInfo(formulae)
 
         for formula in formulae {
-            if let info = await getFormulaInfo(formula) {
+            if let info = infos[formula] {
                 versions.append(
                     RemoteVersion(
                         version: info.version,
@@ -131,8 +210,13 @@ class BrewService {
             }
         }
 
-        // 按版本号降序排序
-        return versions.sorted { $0.formula > $1.formula }
+        let limit = 6
+        return Array(
+            versions.sorted { v1, v2 in
+                v1.version.compare(v2.version, options: .numeric) == .orderedDescending
+            }
+            .prefix(limit)
+        )
     }
 
     /// 获取 Go 可用版本（动态查询）
@@ -141,9 +225,10 @@ class BrewService {
 
         // 搜索 go 和 go@x.x
         let formulae = await searchFormulae(pattern: "^go(@[0-9.]+)?$")
+        let infos = await getBatchFormulaeInfo(formulae)
 
         for formula in formulae {
-            if let info = await getFormulaInfo(formula) {
+            if let info = infos[formula] {
                 let isLatest = formula == "go"
                 versions.append(
                     RemoteVersion(
@@ -155,11 +240,15 @@ class BrewService {
             }
         }
 
-        return versions.sorted { v1, v2 in
-            if v1.formula == "go" { return true }
-            if v2.formula == "go" { return false }
-            return v1.formula > v2.formula
-        }
+        let limit = 6
+        return Array(
+            versions.sorted { v1, v2 in
+                if v1.formula == "go" { return v2.formula != "go" }
+                if v2.formula == "go" { return false }
+                return v1.version.compare(v2.version, options: .numeric) == .orderedDescending
+            }
+            .prefix(limit)
+        )
     }
 
     // MARK: - 安装/卸载
@@ -203,42 +292,137 @@ class BrewService {
         let isInstalled: Bool
     }
 
-    private func getFormulaInfo(_ formula: String) async -> FormulaInfo? {
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: brewPath)
-        task.arguments = ["info", "--json=v2", formula]
+    private func getBatchFormulaeInfo(_ formulae: [String]) async -> [String: FormulaInfo] {
+        guard !formulae.isEmpty else { return [:] }
 
-        let pipe = Pipe()
-        task.standardOutput = pipe
-        task.standardError = Pipe()
+        // 尝试批量获取
+        let result = await executeBrewInfo(formulae)
 
-        do {
-            try task.run()
-            task.waitUntilExit()
-
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                let formulae = json["formulae"] as? [[String: Any]],
-                let first = formulae.first
-            else {
-                return nil
-            }
-
-            let versions = first["versions"] as? [String: Any]
-            let stable = versions?["stable"] as? String ?? "unknown"
-            let installed = first["installed"] as? [[String: Any]] ?? []
-
-            return FormulaInfo(version: stable, isInstalled: !installed.isEmpty)
-        } catch {
-            print("Error getting formula info for \(formula): \(error)")
-            return nil
+        // 如果批量获取成功（有数据），直接返回
+        if !result.isEmpty {
+            return result
         }
+
+        // 如果批量失败且有多个 formula，尝试逐个获取（Fallback 机制）
+        // 这可以防止因单个 formula 报错导致整个列表失败，也能规避某些极端的大数据量问题
+        if formulae.count > 1 {
+            var fallbackResult: [String: FormulaInfo] = [:]
+            for formula in formulae {
+                let singleResult = await executeBrewInfo([formula])
+                fallbackResult.merge(singleResult) { (current, _) in current }
+            }
+            return fallbackResult
+        }
+
+        return [:]
+    }
+
+    private func executeBrewInfo(_ formulae: [String]) async -> [String: FormulaInfo] {
+        guard let brewPath else {
+            print("Brew path not found")
+            return [:]
+        }
+        let brewExecutable = brewPath
+        let input = formulae
+
+        return await Task.detached(priority: .userInitiated) {
+            let task = Process()
+            task.executableURL = URL(fileURLWithPath: brewExecutable)
+            task.arguments = ["info", "--json=v2"] + input
+
+            let pipe = Pipe()
+            let errorPipe = Pipe()
+            task.standardOutput = pipe
+            task.standardError = errorPipe
+
+            do {
+                try task.run()
+
+                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
+                task.waitUntilExit()
+
+                // 检查错误输出
+                if let errorOutput = String(data: errorData, encoding: .utf8), !errorOutput.isEmpty
+                {
+                    print("Brew info error for formulae \(formulae): \(errorOutput)")
+                }
+
+                guard task.terminationStatus == 0 else {
+                    print(
+                        "Brew info failed with status \(task.terminationStatus) for formulae: \(formulae)"
+                    )
+                    return [:]
+                }
+
+                guard !data.isEmpty else {
+                    print("Brew info returned empty data for formulae: \(formulae)")
+                    return [:]
+                }
+
+                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+                else {
+                    print("Failed to parse JSON from brew info for formulae: \(formulae)")
+                    if let output = String(data: data, encoding: .utf8) {
+                        print("Raw output: \(output.prefix(500))")
+                    }
+                    return [:]
+                }
+
+                guard let formulaeList = json["formulae"] as? [[String: Any]] else {
+                    print("JSON does not contain 'formulae' key for: \(formulae)")
+                    print("JSON keys: \(json.keys)")
+                    return [:]
+                }
+
+                var result: [String: FormulaInfo] = [:]
+
+                for formulaData in formulaeList {
+                    if let name = formulaData["name"] as? String {
+                        let versions = formulaData["versions"] as? [String: Any]
+                        let stable = versions?["stable"] as? String ?? "unknown"
+                        let installed = formulaData["installed"] as? [[String: Any]] ?? []
+
+                        result[name] = FormulaInfo(version: stable, isInstalled: !installed.isEmpty)
+
+                        if let fullName = formulaData["full_name"] as? String, fullName != name {
+                            result[fullName] = FormulaInfo(
+                                version: stable, isInstalled: !installed.isEmpty)
+                        }
+                    }
+                }
+
+                if result.isEmpty {
+                    print("No formula info extracted from brew info for: \(formulae)")
+                } else {
+                    print(
+                        "Successfully extracted info for \(result.count) formulae: \(result.keys.joined(separator: ", "))"
+                    )
+                }
+
+                return result
+            } catch {
+                print("Error executing brew info: \(error)")
+                return [:]
+            }
+        }.value
+    }
+
+    private func getFormulaInfo(_ formula: String) async -> FormulaInfo? {
+        let batch = await getBatchFormulaeInfo([formula])
+        return batch[formula] ?? batch.values.first
     }
 
     private func runBrewCommand(_ arguments: [String], onOutput: @escaping (String) -> Void) async
         -> Bool
     {
-        let brewExecutable = self.brewPath  // 捕获为局部变量避免 Sendable 警告
+        guard let brewPath else {
+            await MainActor.run {
+                onOutput("Error: Homebrew not found")
+            }
+            return false
+        }
+        let brewExecutable = brewPath
 
         return await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
@@ -273,6 +457,45 @@ class BrewService {
                     continuation.resume(returning: false)
                 }
             }
+        }
+    }
+
+    private static func resolveBrewPath() -> String? {
+        let fileManager = FileManager.default
+
+        let candidates = [
+            "/opt/homebrew/bin/brew",
+            "/usr/local/bin/brew",
+        ]
+
+        for path in candidates where fileManager.fileExists(atPath: path) {
+            return path
+        }
+
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/which")
+        task.arguments = ["brew"]
+
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        task.standardError = Pipe()
+
+        do {
+            try task.run()
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            task.waitUntilExit()
+
+            guard task.terminationStatus == 0,
+                let output = String(data: data, encoding: .utf8)
+            else {
+                return nil
+            }
+
+            let resolved = output.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !resolved.isEmpty, fileManager.fileExists(atPath: resolved) else { return nil }
+            return resolved
+        } catch {
+            return nil
         }
     }
 }

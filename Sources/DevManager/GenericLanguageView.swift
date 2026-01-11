@@ -4,12 +4,31 @@ import SwiftUI
 struct GenericLanguageView: View {
     let metadata: LanguageMetadata
     @ObservedObject var manager: AnyLanguageManager
-    
+
     @State private var versionToUninstall: AnyLanguageVersion?
     @State private var showUninstallConfirmation = false
     @State private var isUninstalling = false
     @State private var uninstallingVersionId: UUID?
     @State private var showVersionManager = false
+    @StateObject private var installViewModel: VersionInstallViewModel
+
+    init(metadata: LanguageMetadata, manager: AnyLanguageManager) {
+        self.metadata = metadata
+        self.manager = manager
+        self._installViewModel = StateObject(
+            wrappedValue: VersionInstallViewModel(language: Self.getLanguageEnum(metadata.id)))
+    }
+
+    // Static helper to convert string ID to LanguageType enum (used in init)
+    private static func getLanguageEnum(_ id: String) -> VersionInstallViewModel.LanguageType {
+        switch id {
+        case "java": return .java
+        case "node": return .node
+        case "python": return .python
+        case "go": return .go
+        default: return .java
+        }
+    }
 
     private var displayedVersions: [AnyLanguageVersion] {
         var sorted = manager.installedVersions.sorted { lhs, rhs in
@@ -45,7 +64,7 @@ struct GenericLanguageView: View {
                     color: metadata.color,
                     onInstallNew: { showVersionManager = true }
                 )
-                
+
                 versionsTable
             }
 
@@ -66,7 +85,7 @@ struct GenericLanguageView: View {
         }
         .sheet(isPresented: $showVersionManager) {
             VersionManagerSheet(
-                viewModel: VersionInstallViewModel(language: getLanguageEnum(metadata.id)),
+                viewModel: installViewModel,
                 onDismiss: { showVersionManager = false },
                 onComplete: { manager.refresh() }
             )
@@ -118,36 +137,27 @@ struct GenericLanguageView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: { version in
-            Text("Are you sure you want to uninstall \(version.version)? This action cannot be undone.")
+            Text(
+                "Are you sure you want to uninstall \(version.version)? This action cannot be undone."
+            )
         }
     }
-    
+
     private func performUninstall(_ version: AnyLanguageVersion) {
         isUninstalling = true
         uninstallingVersionId = version.id
-        
+
         Task {
             let success = await manager.uninstall(version) { _ in }
-            
+
             await MainActor.run {
                 isUninstalling = false
                 uninstallingVersionId = nil
-                
+
                 if success {
                     manager.refresh()
                 }
             }
-        }
-    }
-    
-    // Helper function to convert string ID to LanguageType enum
-    private func getLanguageEnum(_ id: String) -> VersionInstallViewModel.LanguageType {
-        switch id {
-        case "java": return .java
-        case "node": return .node
-        case "python": return .python
-        case "go": return .go
-        default: return .java
         }
     }
 

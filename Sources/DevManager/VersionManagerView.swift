@@ -10,6 +10,7 @@ class VersionInstallViewModel: ObservableObject {
     @Published var installProgress: String = ""
     @Published var currentOperation: String?
     @Published var downloadProgress: Double? = nil  // 下载进度 0-100
+    @Published var errorMessage: String? = nil  // 错误信息
 
     let language: LanguageType
 
@@ -32,9 +33,16 @@ class VersionInstallViewModel: ObservableObject {
 
     func fetchVersions() async {
         isLoading = true
+        errorMessage = nil
         defer { isLoading = false }
 
         let brew = BrewService.shared
+        
+        guard brew.isAvailable else {
+            errorMessage = "Homebrew is not installed or not found in PATH. Please install Homebrew first."
+            remoteVersions = []
+            return
+        }
 
         switch language {
         case .node:
@@ -45,6 +53,11 @@ class VersionInstallViewModel: ObservableObject {
             remoteVersions = await brew.fetchPythonVersions()
         case .go:
             remoteVersions = await brew.fetchGoVersions()
+        }
+        
+        // 如果获取到空数组，设置错误信息
+        if remoteVersions.isEmpty && errorMessage == nil {
+            errorMessage = "No versions found. This might be due to:\n• Network connectivity issues\n• Homebrew formula repository not updated\n• No matching formulae available\n\nTry running 'brew update' in Terminal."
         }
     }
 
@@ -120,6 +133,7 @@ struct VersionManagerSheet: View {
 
     @State private var showProgress = false
     @State private var searchText = ""
+    @FocusState private var isSearchFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -141,6 +155,7 @@ struct VersionManagerSheet: View {
                     TextField("Search", text: $searchText)
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 240)
+                        .focused($isSearchFocused)
                         .disabled(viewModel.isInstalling)
 
                     Button(action: onDismiss) {
@@ -203,8 +218,25 @@ struct VersionManagerSheet: View {
                         Text("No versions available")
                             .font(.headline)
                             .foregroundColor(.secondary)
+                        
+                        if let errorMessage = viewModel.errorMessage {
+                            Text(errorMessage)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
+                        }
+                        
+                        Button("Retry") {
+                            Task {
+                                await viewModel.fetchVersions()
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .padding(.top, 8)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding()
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 12) {
@@ -328,6 +360,11 @@ struct VersionManagerSheet: View {
         .frame(minWidth: 750, idealWidth: 800, minHeight: 550, idealHeight: 650)
         .animation(.easeInOut(duration: 0.3), value: viewModel.isInstalling)
         .animation(.easeInOut(duration: 0.3), value: showProgress)
+        .onAppear {
+            DispatchQueue.main.async {
+                isSearchFocused = true
+            }
+        }
         .task {
             await viewModel.fetchVersions()
         }

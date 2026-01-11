@@ -22,14 +22,14 @@ enum NavigationItem: String, CaseIterable, Identifiable {
 
     var iconImage: String {
         switch self {
-        case .dashboard: return "" // Dashboard uses SF Symbol
+        case .dashboard: return ""  // Dashboard uses SF Symbol
         case .java: return "java"
         case .node: return "nodejs"
         case .python: return "python"
         case .go: return "go"
         }
     }
-    
+
     var iconSymbol: String? {
         switch self {
         case .dashboard: return "chart.bar.horizontal.fill"
@@ -58,7 +58,7 @@ struct ContentView: View {
     }
 
     @State private var selection: Route? = .dashboard
-    
+
     init(registry: LanguageRegistry) {
         self.registry = registry
         _dashboardViewModel = StateObject(wrappedValue: DashboardViewModel(registry: registry))
@@ -85,7 +85,8 @@ struct ContentView: View {
                         ZStack {
                             RoundedRectangle(cornerRadius: 8)
                                 .fill(
-                                    selection == .dashboard ? Color.blue.opacity(0.15) : Color.clear)
+                                    selection == .dashboard ? Color.blue.opacity(0.15) : Color.clear
+                                )
 
                             if selection == .dashboard {
                                 HStack {
@@ -98,7 +99,7 @@ struct ContentView: View {
                         }
                     )
                     .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
-                    
+
                     // 语言项
                     ForEach(registry.allLanguages) { language in
                         let metadata = language.metadata
@@ -124,7 +125,8 @@ struct ContentView: View {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 8)
                                     .fill(
-                                        selection == .language(metadata.id) ? metadata.color.opacity(0.15) : Color.clear)
+                                        selection == .language(metadata.id)
+                                            ? metadata.color.opacity(0.15) : Color.clear)
 
                                 if selection == .language(metadata.id) {
                                     HStack {
@@ -157,12 +159,13 @@ struct ContentView: View {
                     selection: $selection
                 )
             } else if case .language(let languageId) = selection,
-                      let language = registry.getLanguage(for: languageId)
+                let language = registry.getLanguage(for: languageId)
             {
                 GenericLanguageView(
                     metadata: language.metadata,
                     manager: language.manager
                 )
+                .id(languageId)  // 强制在语言切换时重建视图，确保 @StateObject 重新初始化
             } else {
                 VStack(spacing: 16) {
                     Image(systemName: "app.dashed")

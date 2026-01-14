@@ -4,7 +4,6 @@ import SwiftUI
 struct DashboardView: View {
     @ObservedObject var viewModel: DashboardViewModel
     @Binding var selection: ContentView.Route?
-    @ObservedObject private var updateChecker = UpdateChecker.shared
 
     @State private var isQuickStartExpanded: Bool
 
@@ -97,9 +96,6 @@ struct DashboardView: View {
             }
 
             Spacer()
-
-            // Version Status
-            VersionStatusView(updateChecker: updateChecker)
         }
     }
 
@@ -435,108 +431,5 @@ private struct DetailItem: View {
                     .foregroundStyle(value == "—" ? .tertiary : .secondary)
             }
         }
-    }
-}
-
-// MARK: - Version Status View
-private struct VersionStatusView: View {
-    @ObservedObject var updateChecker: UpdateChecker
-    @State private var isHovered = false
-
-    private var hasUpdate: Bool {
-        updateChecker.updateInfo?.isUpdateAvailable ?? false
-    }
-
-    private var latestVersion: String? {
-        updateChecker.updateInfo?.latestVersion
-    }
-
-    var body: some View {
-        Button {
-            if hasUpdate {
-                updateChecker.openReleasePage()
-            } else {
-                Task {
-                    await updateChecker.checkForUpdates(force: true)
-                }
-            }
-        } label: {
-            HStack(spacing: DMSpace.s) {
-                // Version info
-                VStack(alignment: .trailing, spacing: 2) {
-                    HStack(spacing: 4) {
-                        if hasUpdate {
-                            Image(systemName: "arrow.down.circle.fill")
-                                .font(.system(size: 12))
-                                .foregroundStyle(.green)
-                        }
-                        Text("v\(updateChecker.currentVersion)")
-                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                            .foregroundStyle(.primary)
-                    }
-
-                    // Status text
-                    statusText
-                }
-
-                // Icon
-                ZStack {
-                    Circle()
-                        .fill(hasUpdate ? DMGradient.accent(.green) : DMGradient.subtle(.secondary))
-                        .frame(width: 32, height: 32)
-
-                    Image(systemName: hasUpdate ? "arrow.down.to.line" : "arrow.clockwise")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(hasUpdate ? .green : .secondary)
-                }
-            }
-            .padding(.horizontal, DMSpace.m)
-            .padding(.vertical, DMSpace.s)
-            .background(
-                RoundedRectangle(cornerRadius: DMRadius.card)
-                    .fill(hasUpdate ? Color.green.opacity(0.08) : Color.primary.opacity(0.04))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DMRadius.card)
-                    .stroke(
-                        hasUpdate ? Color.green.opacity(0.25) : Color.primary.opacity(0.08),
-                        lineWidth: 1
-                    )
-            )
-            .scaleEffect(isHovered ? 1.02 : 1.0)
-            .animation(DMAnimation.quick, value: isHovered)
-        }
-        .buttonStyle(.plain)
-        .onHover { hovering in
-            isHovered = hovering
-        }
-        .help(hasUpdate ? "Download new version" : "Check for updates")
-    }
-
-    @ViewBuilder
-    private var statusText: some View {
-        Group {
-            if updateChecker.isChecking {
-                HStack(spacing: 4) {
-                    ProgressView()
-                        .scaleEffect(0.5)
-                        .frame(width: 10, height: 10)
-                    Text("Checking...")
-                }
-            } else if hasUpdate, let latest = latestVersion {
-                Text("v\(latest) available")
-                    .foregroundStyle(.green)
-            } else if updateChecker.updateInfo != nil {
-                HStack(spacing: 4) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                    Text("Up to date")
-                }
-            } else {
-                Text("Check for updates")
-            }
-        }
-        .font(.system(size: 10, weight: .medium))
-        .foregroundStyle(.secondary)
     }
 }

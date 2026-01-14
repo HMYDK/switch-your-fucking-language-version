@@ -195,9 +195,6 @@ struct ContentView: View {
         }
         .frame(minWidth: 860, idealWidth: 1200, minHeight: 600, idealHeight: 800)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .task {
-            await UpdateChecker.shared.checkForUpdates()
-        }
     }
 }
 

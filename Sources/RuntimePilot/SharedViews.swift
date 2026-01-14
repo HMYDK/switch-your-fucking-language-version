@@ -71,9 +71,6 @@ struct ModernVersionCard: View {
     let color: Color
     let onUse: () -> Void
     let onOpenFinder: () -> Void
-    var canUninstall: Bool = false
-    var onUninstall: (() -> Void)? = nil
-    var isUninstalling: Bool = false
 
     @State private var isHovered = false
     @State private var showCopied = false
@@ -128,7 +125,6 @@ struct ModernVersionCard: View {
                         }
                         .buttonStyle(.bordered)
                         .tint(color)
-                        .disabled(isUninstalling)
 
                         Button(action: onOpenFinder) {
                             Image(systemName: "folder")
@@ -136,26 +132,8 @@ struct ModernVersionCard: View {
                         }
                         .buttonStyle(.borderless)
                         .foregroundColor(.secondary)
-                        .disabled(isUninstalling)
-                        
-                        if canUninstall, let uninstallAction = onUninstall {
-                            Button(action: uninstallAction) {
-                                if isUninstalling {
-                                    ProgressView()
-                                        .scaleEffect(0.7)
-                                        .frame(width: 14, height: 14)
-                                } else {
-                                    Image(systemName: "trash")
-                                        .font(.system(size: 14))
-                                }
-                            }
-                            .buttonStyle(.borderless)
-                            .foregroundColor(isUninstalling ? .secondary : .red)
-                            .disabled(isUninstalling)
-                            .help("Uninstall")
-                        }
                     }
-                    .opacity(isHovered || isUninstalling ? 1 : 0)
+                    .opacity(isHovered ? 1 : 0)
                 }
             }
             .padding(16)
@@ -224,7 +202,7 @@ struct ModernVersionCard: View {
             Button("Use This Version") {
                 onUse()
             }
-            .disabled(isActive || isUninstalling)
+            .disabled(isActive)
 
             Button("Copy Path") {
                 NSPasteboard.general.clearContents()
@@ -233,15 +211,6 @@ struct ModernVersionCard: View {
 
             Button("Reveal in Finder") {
                 onOpenFinder()
-            }
-            
-            if canUninstall, let uninstallAction = onUninstall {
-                Divider()
-                
-                Button("Uninstall Version") {
-                    uninstallAction()
-                }
-                .disabled(isActive || isUninstalling)
             }
         }
     }
@@ -347,7 +316,7 @@ struct ModernEmptyState: View {
                 }
                 .buttonStyle(.bordered)
                 .tint(color)
-                
+
                 if let installAction = onInstallNew {
                     Button(action: installAction) {
                         HStack(spacing: 6) {
@@ -374,8 +343,7 @@ struct ModernEmptyState: View {
 struct VersionActionBar: View {
     let installedCount: Int
     let color: Color
-    let onInstallNew: () -> Void
-    
+
     var body: some View {
         HStack(spacing: 16) {
             // 统计信息
@@ -383,27 +351,23 @@ struct VersionActionBar: View {
                 Image(systemName: "chart.bar.fill")
                     .font(.system(size: 14))
                     .foregroundColor(.secondary)
-                
+
                 Text("\(installedCount) version\(installedCount == 1 ? "" : "s") installed")
                     .font(.callout)
                     .foregroundColor(.secondary)
             }
-            
+
             Spacer()
-            
-            // 新增按钮
-            Button(action: onInstallNew) {
-                HStack(spacing: 6) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 16))
-                    Text("Install New Version")
-                        .fontWeight(.medium)
-                }
-                .font(.callout)
+
+            // 安装提示
+            HStack(spacing: 6) {
+                Image(systemName: "terminal")
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+                Text("Use Homebrew or version managers to install")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(color)
-            .help("Install new version")
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 14)

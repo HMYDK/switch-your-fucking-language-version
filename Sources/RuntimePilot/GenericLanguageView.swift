@@ -5,31 +5,6 @@ struct GenericLanguageView: View {
     let metadata: LanguageMetadata
     @ObservedObject var manager: AnyLanguageManager
 
-    @State private var versionToUninstall: AnyLanguageVersion?
-    @State private var showUninstallConfirmation = false
-    @State private var isUninstalling = false
-    @State private var uninstallingVersionId: UUID?
-    @State private var showVersionManager = false
-    @StateObject private var installViewModel: VersionInstallViewModel
-
-    init(metadata: LanguageMetadata, manager: AnyLanguageManager) {
-        self.metadata = metadata
-        self.manager = manager
-        self._installViewModel = StateObject(
-            wrappedValue: VersionInstallViewModel(language: Self.getLanguageEnum(metadata.id)))
-    }
-
-    // Static helper to convert string ID to LanguageType enum (used in init)
-    private static func getLanguageEnum(_ id: String) -> VersionInstallViewModel.LanguageType {
-        switch id {
-        case "java": return .java
-        case "node": return .node
-        case "python": return .python
-        case "go": return .go
-        default: return .java
-        }
-    }
-
     private var displayedVersions: [AnyLanguageVersion] {
         var sorted = manager.installedVersions.sorted { lhs, rhs in
             compareVersionDescending(lhs.version, rhs.version)
@@ -52,17 +27,16 @@ struct GenericLanguageView: View {
                 ModernEmptyState(
                     iconImage: metadata.iconName,
                     title: "No \(metadata.displayName) Versions Found",
-                    message: "Install via Homebrew or version manager, then refresh.",
+                    message:
+                        "Install versions using Homebrew, NVM, pyenv, or other version managers, then refresh.",
                     color: metadata.color,
-                    onRefresh: { manager.refresh() },
-                    onInstallNew: { showVersionManager = true }
+                    onRefresh: { manager.refresh() }
                 )
             } else {
                 // 操作栏
                 VersionActionBar(
                     installedCount: manager.installedVersions.count,
-                    color: metadata.color,
-                    onInstallNew: { showVersionManager = true }
+                    color: metadata.color
                 )
 
                 versionsTable
@@ -82,13 +56,6 @@ struct GenericLanguageView: View {
                 .help("Refresh")
                 .accessibilityLabel("Refresh versions")
             }
-        }
-        .sheet(isPresented: $showVersionManager) {
-            VersionManagerSheet(
-                viewModel: installViewModel,
-                onDismiss: { showVersionManager = false },
-                onComplete: { manager.refresh() }
-            )
         }
     }
 
@@ -115,49 +82,11 @@ struct GenericLanguageView: View {
                             NSWorkspace.shared.activateFileViewerSelecting(
                                 [URL(fileURLWithPath: version.path)]
                             )
-                        },
-                        canUninstall: manager.canUninstall(version),
-                        onUninstall: {
-                            versionToUninstall = version
-                            showUninstallConfirmation = true
-                        },
-                        isUninstalling: uninstallingVersionId == version.id
+                        }
                     )
                 }
             }
             .padding(DMSpace.l)
-        }
-        .confirmationDialog(
-            "Confirm Uninstall",
-            isPresented: $showUninstallConfirmation,
-            presenting: versionToUninstall
-        ) { version in
-            Button("Uninstall \(version.version)", role: .destructive) {
-                performUninstall(version)
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: { version in
-            Text(
-                "Are you sure you want to uninstall \(version.version)? This action cannot be undone."
-            )
-        }
-    }
-
-    private func performUninstall(_ version: AnyLanguageVersion) {
-        isUninstalling = true
-        uninstallingVersionId = version.id
-
-        Task {
-            let success = await manager.uninstall(version) { _ in }
-
-            await MainActor.run {
-                isUninstalling = false
-                uninstallingVersionId = nil
-
-                if success {
-                    manager.refresh()
-                }
-            }
         }
     }
 

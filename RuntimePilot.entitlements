@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- App Sandbox (必需) -->
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+    
+    <!-- 网络访问 (用于检查更新) -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+    
+    <!-- 用户选择的文件读写访问 (用于 Security-Scoped Bookmarks) -->
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+    
+    <!-- 允许访问用户书签的文件 -->
+    <key>com.apple.security.files.bookmarks.app-scope</key>
+    <true/>
+</dict>
+</plist>

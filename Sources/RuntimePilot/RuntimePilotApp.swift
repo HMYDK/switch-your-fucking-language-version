@@ -19,6 +19,9 @@ struct RuntimePilotApp: App {
     @StateObject private var pythonManager = PythonManager()
     @StateObject private var goManager = GoManager()
     @StateObject private var registry = LanguageRegistry()
+    @StateObject private var directoryAccessManager = DirectoryAccessManager.shared
+
+    @State private var showOnboarding = false
 
     init() {
         // 注册所有语言
@@ -38,6 +41,17 @@ struct RuntimePilotApp: App {
                     registry.register(metadata: .node, manager: nodeManager)
                     registry.register(metadata: .python, manager: pythonManager)
                     registry.register(metadata: .go, manager: goManager)
+
+                    // 检查是否需要显示引导
+                    if directoryAccessManager.needsOnboarding {
+                        showOnboarding = true
+                    }
+                }
+                .sheet(isPresented: $showOnboarding) {
+                    OnboardingView(
+                        accessManager: directoryAccessManager,
+                        isPresented: $showOnboarding
+                    )
                 }
         }
         .windowStyle(.hiddenTitleBar)
@@ -70,6 +84,12 @@ struct RuntimePilotApp: App {
                     }
                 }
                 .keyboardShortcut("r", modifiers: .command)
+
+                Divider()
+
+                Button("Manage Directory Access...") {
+                    showOnboarding = true
+                }
             }
         }
     }

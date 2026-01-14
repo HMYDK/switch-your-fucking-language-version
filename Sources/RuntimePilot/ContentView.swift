@@ -68,41 +68,72 @@ struct ContentView: View {
         NavigationSplitView {
             VStack(spacing: 0) {
                 // App Header
-                HStack(spacing: DMSpace.s) {
+                HStack(spacing: 10) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: DMRadius.control)
-                            .fill(DMGradient.accent(.blue))
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.blue.opacity(0.2), Color.purple.opacity(0.15)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.2)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1
+                            )
                         Image(systemName: "cpu.fill")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(.blue)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [.blue, .purple],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
                     }
-                    .frame(width: 28, height: 28)
+                    .frame(width: 32, height: 32)
+                    .shadow(color: Color.blue.opacity(0.2), radius: 4, x: 0, y: 2)
 
-                    Text("RuntimePilot")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(.primary)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("RuntimePilot")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(.primary)
+                        Text("Dev Environment Manager")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, DMSpace.m)
-                .padding(.vertical, DMSpace.s)
-
-                Divider()
-                    .padding(.horizontal, DMSpace.m)
-                    .opacity(0.5)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 14)
 
                 // Section Header
-                Text("ENVIRONMENTS")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(.secondary.opacity(0.7))
-                    .tracking(1)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, DMSpace.m)
-                    .padding(.bottom, DMSpace.xs)
-                    .padding(.horizontal, DMSpace.m)
+                HStack(spacing: 6) {
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(Color.secondary.opacity(0.3))
+                        .frame(width: 12, height: 2)
+                    Text("ENVIRONMENTS")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(.secondary.opacity(0.6))
+                        .tracking(1.2)
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(Color.secondary.opacity(0.3))
+                        .frame(height: 2)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 4)
+                .padding(.bottom, 10)
+                .padding(.horizontal, 14)
 
-                // Navigation Items (no List, use ScrollView)
+                // Navigation Items
                 ScrollView {
-                    VStack(spacing: 2) {
+                    VStack(spacing: 4) {
                         // Dashboard
                         SidebarNavItem(
                             title: "Dashboard",
@@ -126,10 +157,20 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 8)
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 16)
                 }
             }
-            .background(DMColor.windowBackground.opacity(0.5))
+            .background(
+                LinearGradient(
+                    colors: [
+                        DMColor.windowBackground.opacity(0.8),
+                        DMColor.windowBackground.opacity(0.4),
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
             .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 260)
         } detail: {
             Group {
@@ -173,60 +214,106 @@ private struct SidebarNavItem: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: DMSpace.s) {
-                // Icon
-                Group {
-                    if let icon {
-                        Image(systemName: icon)
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(isSelected ? color : .secondary)
-                            .frame(width: 20, height: 20)
-                    } else if let iconImage {
-                        if let url = Bundle.module.url(
-                            forResource: iconImage, withExtension: "png"),
-                            let nsImage = NSImage(contentsOf: url)
-                        {
-                            Image(nsImage: nsImage)
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 18, height: 18)
+            HStack(spacing: 10) {
+                // Icon with background
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(
+                            isSelected
+                                ? LinearGradient(
+                                    colors: [color.opacity(0.25), color.opacity(0.15)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                                : LinearGradient(
+                                    colors: [
+                                        Color.primary.opacity(isHovered ? 0.08 : 0.05),
+                                        Color.primary.opacity(isHovered ? 0.04 : 0.02),
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                        )
+
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(
+                            isSelected ? color.opacity(0.3) : Color.primary.opacity(0.08),
+                            lineWidth: 1
+                        )
+
+                    Group {
+                        if let icon {
+                            Image(systemName: icon)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(isSelected ? color : .secondary)
+                        } else if let iconImage {
+                            if let url = Bundle.module.url(
+                                forResource: iconImage, withExtension: "png"),
+                                let nsImage = NSImage(contentsOf: url)
+                            {
+                                Image(nsImage: nsImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 16, height: 16)
+                                    .saturation(isSelected ? 1.0 : 0.7)
+                                    .opacity(isSelected ? 1 : 0.8)
+                            }
                         }
                     }
                 }
+                .frame(width: 32, height: 32)
+                .shadow(color: isSelected ? color.opacity(0.25) : .clear, radius: 4, x: 0, y: 2)
 
                 Text(title)
                     .font(.system(size: 13, weight: isSelected ? .semibold : .medium))
                     .foregroundStyle(isSelected ? .primary : .secondary)
 
                 Spacer()
+
+                // Selection indicator
+                if isSelected {
+                    Circle()
+                        .fill(color)
+                        .frame(width: 6, height: 6)
+                        .shadow(color: color.opacity(0.5), radius: 3, x: 0, y: 0)
+                }
             }
-            .padding(.horizontal, DMSpace.s)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
             .background(
-                RoundedRectangle(cornerRadius: 6)
+                RoundedRectangle(cornerRadius: 10)
                     .fill(
                         isSelected
-                            ? color.opacity(0.12)
-                            : (isHovered ? Color.primary.opacity(0.05) : Color.clear))
+                            ? LinearGradient(
+                                colors: [color.opacity(0.12), color.opacity(0.06)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                            : LinearGradient(
+                                colors: [
+                                    Color.primary.opacity(isHovered ? 0.06 : 0),
+                                    Color.primary.opacity(isHovered ? 0.03 : 0),
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                    )
             )
             .overlay(
-                HStack(spacing: 0) {
-                    if isSelected {
-                        RoundedRectangle(cornerRadius: 1.5)
-                            .fill(color)
-                            .frame(width: 3)
-                            .padding(.vertical, 4)
-                    }
-                    Spacer()
-                }
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(
+                        isSelected ? color.opacity(0.2) : Color.clear,
+                        lineWidth: 1
+                    )
             )
         }
         .buttonStyle(.plain)
         .contentShape(Rectangle())
+        .scaleEffect(isHovered && !isSelected ? 1.02 : 1)
+        .animation(.easeOut(duration: 0.15), value: isHovered)
+        .animation(.easeOut(duration: 0.2), value: isSelected)
         .onHover { hovering in
-            withAnimation(.easeOut(duration: 0.15)) {
-                isHovered = hovering
-            }
+            isHovered = hovering
         }
     }
 }

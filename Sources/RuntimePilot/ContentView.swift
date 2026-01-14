@@ -22,7 +22,7 @@ enum NavigationItem: String, CaseIterable, Identifiable {
 
     var iconImage: String {
         switch self {
-        case .dashboard: return ""  // Dashboard uses SF Symbol
+        case .dashboard: return ""
         case .java: return "java"
         case .node: return "nodejs"
         case .python: return "python"
@@ -32,7 +32,7 @@ enum NavigationItem: String, CaseIterable, Identifiable {
 
     var iconSymbol: String? {
         switch self {
-        case .dashboard: return "chart.bar.horizontal.fill"
+        case .dashboard: return "square.grid.2x2.fill"
         default: return nil
         }
     }
@@ -66,124 +66,194 @@ struct ContentView: View {
 
     var body: some View {
         NavigationSplitView {
-            List(selection: $selection) {
-                Section {
-                    // Dashboard
-                    NavigationLink(value: Route.dashboard) {
-                        HStack(spacing: 10) {
-                            Image(systemName: "chart.bar.horizontal.fill")
-                                .font(.system(size: 16))
-                                .frame(width: 20, height: 20)
-
-                            Text("Dashboard")
-                                .font(.body)
-                                .fontWeight(.medium)
-                        }
-                        .padding(.vertical, 4)
+            VStack(spacing: 0) {
+                // App Header
+                HStack(spacing: DMSpace.s) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: DMRadius.control)
+                            .fill(DMGradient.accent(.blue))
+                        Image(systemName: "cpu.fill")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(.blue)
                     }
-                    .listRowBackground(
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(
-                                    selection == .dashboard
-                                        ? Color.blue.opacity(0.15) : Color.clear
-                                )
+                    .frame(width: 28, height: 28)
 
-                            if selection == .dashboard {
-                                HStack {
-                                    Rectangle()
-                                        .fill(Color.blue)
-                                        .frame(width: 3)
-                                    Spacer()
-                                }
+                    Text("RuntimePilot")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.primary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, DMSpace.m)
+                .padding(.vertical, DMSpace.s)
+
+                Divider()
+                    .padding(.horizontal, DMSpace.m)
+                    .opacity(0.5)
+
+                // Section Header
+                Text("ENVIRONMENTS")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.secondary.opacity(0.7))
+                    .tracking(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, DMSpace.m)
+                    .padding(.bottom, DMSpace.xs)
+                    .padding(.horizontal, DMSpace.m)
+
+                // Navigation Items (no List, use ScrollView)
+                ScrollView {
+                    VStack(spacing: 2) {
+                        // Dashboard
+                        SidebarNavItem(
+                            title: "Dashboard",
+                            icon: "square.grid.2x2.fill",
+                            color: .blue,
+                            isSelected: selection == .dashboard
+                        ) {
+                            selection = .dashboard
+                        }
+
+                        // Languages
+                        ForEach(registry.allLanguages) { language in
+                            let metadata = language.metadata
+                            SidebarNavItem(
+                                title: metadata.displayName,
+                                iconImage: metadata.iconName,
+                                color: metadata.color,
+                                isSelected: selection == .language(metadata.id)
+                            ) {
+                                selection = .language(metadata.id)
                             }
                         }
-                    )
-                    .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
-
-                    // 语言项
-                    ForEach(registry.allLanguages) { language in
-                        let metadata = language.metadata
-                        NavigationLink(value: Route.language(metadata.id)) {
-                            HStack(spacing: 10) {
-                                if let url = Bundle.module.url(
-                                    forResource: metadata.iconName, withExtension: "png"),
-                                    let nsImage = NSImage(contentsOf: url)
-                                {
-                                    Image(nsImage: nsImage)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 20, height: 20)
-                                }
-
-                                Text(metadata.displayName)
-                                    .font(.body)
-                                    .fontWeight(.medium)
-                            }
-                            .padding(.vertical, 4)
-                        }
-                        .listRowBackground(
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(
-                                        selection == .language(metadata.id)
-                                            ? metadata.color.opacity(0.15) : Color.clear)
-
-                                if selection == .language(metadata.id) {
-                                    HStack {
-                                        Rectangle()
-                                            .fill(metadata.color)
-                                            .frame(width: 3)
-                                        Spacer()
-                                    }
-                                }
-                            }
-                        )
-                        .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
                     }
-                } header: {
-                    Text("Dev Environments")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundColor(.secondary)
-                        .padding(.top, 8)
-                        .padding(.bottom, 4)
+                    .padding(.horizontal, 8)
                 }
             }
-            .listStyle(.sidebar)
-            .navigationSplitViewColumnWidth(min: 200, ideal: 220)
-            .navigationTitle("RuntimePilot")
+            .background(DMColor.windowBackground.opacity(0.5))
+            .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 260)
         } detail: {
-            if selection == .dashboard {
-                DashboardView(
-                    viewModel: dashboardViewModel,
-                    selection: $selection
-                )
-            } else if case .language(let languageId) = selection,
-                let language = registry.getLanguage(for: languageId)
-            {
-                GenericLanguageView(
-                    metadata: language.metadata,
-                    manager: language.manager
-                )
-                .id(languageId)  // 强制在语言切换时重建视图,确保 @StateObject 重新初始化
-            } else {
-                VStack(spacing: 16) {
-                    Image(systemName: "app.dashed")
-                        .font(.system(size: 48))
-                        .foregroundColor(.secondary.opacity(0.5))
-                    Text("Select a language")
-                        .font(.title3)
-                        .foregroundColor(.secondary)
+            Group {
+                if selection == .dashboard {
+                    DashboardView(
+                        viewModel: dashboardViewModel,
+                        selection: $selection
+                    )
+                } else if case .language(let languageId) = selection,
+                    let language = registry.getLanguage(for: languageId)
+                {
+                    GenericLanguageView(
+                        metadata: language.metadata,
+                        manager: language.manager
+                    )
+                    .id(languageId)
+                } else {
+                    EmptyDetailView()
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(minWidth: 800, idealWidth: 1200, minHeight: 600, idealHeight: 800)
+        .frame(minWidth: 860, idealWidth: 1200, minHeight: 600, idealHeight: 800)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .task {
-            // Check for updates on launch
             await UpdateChecker.shared.checkForUpdates()
         }
+    }
+}
+
+// MARK: - Sidebar Navigation Item
+private struct SidebarNavItem: View {
+    let title: String
+    var icon: String? = nil
+    var iconImage: String? = nil
+    let color: Color
+    let isSelected: Bool
+    let action: () -> Void
+
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: DMSpace.s) {
+                // Icon
+                Group {
+                    if let icon {
+                        Image(systemName: icon)
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(isSelected ? color : .secondary)
+                            .frame(width: 20, height: 20)
+                    } else if let iconImage {
+                        if let url = Bundle.module.url(
+                            forResource: iconImage, withExtension: "png"),
+                            let nsImage = NSImage(contentsOf: url)
+                        {
+                            Image(nsImage: nsImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 18, height: 18)
+                        }
+                    }
+                }
+
+                Text(title)
+                    .font(.system(size: 13, weight: isSelected ? .semibold : .medium))
+                    .foregroundStyle(isSelected ? .primary : .secondary)
+
+                Spacer()
+            }
+            .padding(.horizontal, DMSpace.s)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(
+                        isSelected
+                            ? color.opacity(0.12)
+                            : (isHovered ? Color.primary.opacity(0.05) : Color.clear))
+            )
+            .overlay(
+                HStack(spacing: 0) {
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: 1.5)
+                            .fill(color)
+                            .frame(width: 3)
+                            .padding(.vertical, 4)
+                    }
+                    Spacer()
+                }
+            )
+        }
+        .buttonStyle(.plain)
+        .contentShape(Rectangle())
+        .onHover { hovering in
+            withAnimation(.easeOut(duration: 0.15)) {
+                isHovered = hovering
+            }
+        }
+    }
+}
+
+// MARK: - Empty Detail View
+private struct EmptyDetailView: View {
+    var body: some View {
+        VStack(spacing: DMSpace.l) {
+            ZStack {
+                Circle()
+                    .fill(DMGradient.subtle(.secondary))
+                    .frame(width: 80, height: 80)
+                Image(systemName: "app.dashed")
+                    .font(.system(size: 32, weight: .light))
+                    .foregroundColor(.secondary.opacity(0.5))
+            }
+
+            VStack(spacing: DMSpace.xs) {
+                Text("Select an Environment")
+                    .font(DMTypography.title3)
+                    .foregroundColor(.primary)
+                Text("Choose a language from the sidebar to manage versions")
+                    .font(DMTypography.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(DMColor.windowBackground)
     }
 }

@@ -14,24 +14,24 @@ struct SourceTagView: View {
         if isHomebrew {
             HStack(spacing: 4) {
                 Image(systemName: "mug.fill")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(size: 10, weight: .bold))
                 Text("Homebrew")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.system(size: 11, weight: .semibold))
             }
             .foregroundColor(Color(red: 0.95, green: 0.55, blue: 0.15))
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(
-                RoundedRectangle(cornerRadius: 6)
+                RoundedRectangle(cornerRadius: DMRadius.control)
                     .fill(Color(red: 0.95, green: 0.55, blue: 0.15).opacity(0.12))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 6)
-                    .stroke(Color(red: 0.95, green: 0.55, blue: 0.15).opacity(0.3), lineWidth: 1)
+                RoundedRectangle(cornerRadius: DMRadius.control)
+                    .stroke(Color(red: 0.95, green: 0.55, blue: 0.15).opacity(0.25), lineWidth: 1)
             )
         } else {
             Text(source)
-                .font(.callout)
+                .font(.system(size: 11, weight: .medium))
                 .foregroundColor(.secondary)
         }
     }
@@ -60,7 +60,7 @@ struct LanguageIconView: View {
     }
 }
 
-// MARK: - Modern Card-based Version Display
+// MARK: - Modern Version Card
 
 struct ModernVersionCard: View {
     let version: String
@@ -77,204 +77,230 @@ struct ModernVersionCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Top section with icon and version
-            HStack(alignment: .top, spacing: 12) {
-                // Icon circle
+            // Header section
+            HStack(spacing: 12) {
+                // Icon
                 ZStack {
-                    Circle()
-                        .fill(isActive ? color.opacity(0.2) : Color.gray.opacity(0.1))
-                        .frame(width: 48, height: 48)
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(isActive ? color.opacity(0.15) : Color.gray.opacity(0.08))
+                        .frame(width: 44, height: 44)
 
-                    LanguageIconView(imageName: iconImage, size: 28)
+                    LanguageIconView(imageName: iconImage, size: 24)
                 }
 
-                // Version info
-                VStack(alignment: .leading, spacing: 4) {
+                // Version & Source
+                VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
                         Text(version)
-                            .font(.headline)
-                            .fontWeight(.semibold)
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
 
                         if isActive {
                             Text("CURRENT")
-                                .font(.system(size: 10, weight: .bold))
+                                .font(.system(size: 9, weight: .bold))
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
-                                .background(color)
-                                .cornerRadius(4)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(color)
+                                )
                         }
                     }
 
                     SourceTagView(source: source)
                 }
 
-                Spacer()
+                Spacer(minLength: 8)
 
-                // Right side: checkmark or action buttons
+                // Action area
                 if isActive {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 24))
                         .foregroundColor(color)
                 } else {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 6) {
                         Button(action: onUse) {
                             Text("Use")
-                                .font(.callout)
-                                .fontWeight(.medium)
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(color)
+                                )
                         }
-                        .buttonStyle(.bordered)
-                        .tint(color)
+                        .buttonStyle(.plain)
 
                         Button(action: onOpenFinder) {
                             Image(systemName: "folder")
-                                .font(.system(size: 14))
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                                .frame(width: 28, height: 28)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color.primary.opacity(0.05))
+                                )
                         }
-                        .buttonStyle(.borderless)
-                        .foregroundColor(.secondary)
+                        .buttonStyle(.plain)
                     }
-                    .opacity(isHovered ? 1 : 0)
+                    .opacity(isHovered ? 1 : 0.6)
                 }
             }
-            .padding(16)
+            .padding(12)
 
             // Divider
-            Divider()
-                .padding(.horizontal, 16)
+            Rectangle()
+                .fill(Color.primary.opacity(0.06))
+                .frame(height: 1)
+                .padding(.horizontal, 12)
 
-            // Info section
-            VStack(alignment: .leading, spacing: 8) {
-                // Path info
-                HStack(spacing: 6) {
-                    Image(systemName: "folder.fill")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
+            // Path section
+            HStack(spacing: 6) {
+                Image(systemName: "folder.fill")
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
 
-                    Text(path)
-                        .font(.system(.caption, design: .monospaced))
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
+                Text(path)
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
 
-                    Spacer()
+                Spacer(minLength: 4)
 
-                    Button(action: {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(path, forType: .string)
-                        showCopied = true
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            showCopied = false
-                        }
-                    }) {
-                        Image(systemName: showCopied ? "checkmark" : "doc.on.doc")
-                            .font(.system(size: 12))
+                Button {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(path, forType: .string)
+                    withAnimation { showCopied = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        withAnimation { showCopied = false }
                     }
-                    .buttonStyle(.plain)
-                    .foregroundColor(showCopied ? color : .secondary)
-                    .help("Copy path")
+                } label: {
+                    Image(systemName: showCopied ? "checkmark" : "doc.on.doc")
+                        .font(.system(size: 10))
+                        .foregroundColor(showCopied ? .green : .secondary)
                 }
+                .buttonStyle(.plain)
+                .opacity(isHovered || showCopied ? 1 : 0)
             }
-            .padding(16)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
         }
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(isActive ? color.opacity(0.08) : Color(NSColor.controlBackgroundColor))
+                .fill(isActive ? color.opacity(0.04) : Color(NSColor.controlBackgroundColor))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
                 .stroke(
-                    isActive ? color.opacity(0.4) : Color.gray.opacity(0.1),
-                    lineWidth: isActive ? 2 : 1)
+                    isActive
+                        ? color.opacity(0.3)
+                        : (isHovered ? color.opacity(0.2) : Color.primary.opacity(0.08)),
+                    lineWidth: isActive ? 1.5 : 1
+                )
         )
         .shadow(
-            color: Color.black.opacity(isHovered || isActive ? 0.08 : 0),
-            radius: isHovered ? 8 : (isActive ? 6 : 0),
+            color: Color.black.opacity(isHovered ? 0.08 : 0.04),
+            radius: isHovered ? 12 : 6,
             x: 0,
-            y: isHovered ? 4 : (isActive ? 2 : 0)
+            y: isHovered ? 4 : 2
         )
-        .scaleEffect(isHovered && !isActive ? 1.02 : 1.0)
+        .scaleEffect(isHovered && !isActive ? 1.01 : 1.0)
+        .animation(.easeOut(duration: 0.2), value: isHovered)
         .onHover { hovering in
-            withAnimation(.easeOut(duration: 0.25)) {
-                isHovered = hovering
-            }
+            isHovered = hovering
         }
         .contextMenu {
-            Button("Use This Version") {
-                onUse()
-            }
-            .disabled(isActive)
-
+            Button("Use This Version") { onUse() }
+                .disabled(isActive)
+            Divider()
             Button("Copy Path") {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(path, forType: .string)
             }
-
-            Button("Reveal in Finder") {
-                onOpenFinder()
-            }
+            Button("Reveal in Finder") { onOpenFinder() }
         }
     }
 }
 
+// MARK: - Config Hint View
+
 struct ConfigHintView: View {
     let filename: String
     @State private var showCopied = false
+    @State private var isHovered = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: DMSpace.s) {
+            HStack(spacing: DMSpace.xs) {
                 Image(systemName: "gearshape.fill")
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.orange)
                 Text("Setup Required")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.orange)
                 Spacer()
             }
 
-            HStack(spacing: 12) {
+            HStack(spacing: DMSpace.s) {
                 Text("source ~/.config/devmanager/\(filename)")
-                    .font(.system(.caption, design: .monospaced))
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .foregroundColor(.primary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
+                    .padding(.horizontal, DMSpace.m)
+                    .padding(.vertical, DMSpace.s)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color(NSColor.textBackgroundColor).opacity(0.5))
+                        RoundedRectangle(cornerRadius: DMRadius.control)
+                            .fill(DMColor.textBackground)
                     )
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.secondary.opacity(0.15), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: DMRadius.control)
+                            .stroke(DMColor.separator.opacity(0.5), lineWidth: 1)
                     )
                     .textSelection(.enabled)
 
-                Button(action: {
+                Button {
                     let pasteboard = NSPasteboard.general
                     pasteboard.clearContents()
                     pasteboard.setString(
                         "source ~/.config/devmanager/\(filename)", forType: .string)
-                    showCopied = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        showCopied = false
+                    withAnimation(DMAnimation.quick) {
+                        showCopied = true
                     }
-                }) {
-                    Image(systemName: showCopied ? "checkmark" : "doc.on.doc")
-                        .font(.system(size: 16))
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        withAnimation(DMAnimation.quick) {
+                            showCopied = false
+                        }
+                    }
+                } label: {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: DMRadius.control)
+                            .fill(
+                                showCopied ? Color.green.opacity(0.15) : Color.primary.opacity(0.06)
+                            )
+                            .frame(width: 36, height: 36)
+                        Image(systemName: showCopied ? "checkmark" : "doc.on.doc")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(showCopied ? .green : .secondary)
+                    }
                 }
                 .buttonStyle(.plain)
-                .foregroundColor(showCopied ? .green : .secondary)
-                .help("Copy to clipboard")
+                .scaleEffect(isHovered ? 1.05 : 1)
+                .animation(DMAnimation.quick, value: isHovered)
+                .onHover { hovering in
+                    isHovered = hovering
+                }
             }
         }
-        .padding(20)
-        .background(.ultraThinMaterial)
+        .padding(DMSpace.m)
+        .background(
+            RoundedRectangle(cornerRadius: DMRadius.card)
+                .fill(Color.orange.opacity(0.06))
+        )
         .overlay(
-            Rectangle()
-                .fill(Color.gray.opacity(0.2))
-                .frame(height: 1),
-            alignment: .top
+            RoundedRectangle(cornerRadius: DMRadius.card)
+                .stroke(Color.orange.opacity(0.2), lineWidth: 1)
         )
     }
 }
@@ -289,52 +315,93 @@ struct ModernEmptyState: View {
     let onRefresh: () -> Void
     var onInstallNew: (() -> Void)? = nil
 
+    @State private var isRefreshHovered = false
+    @State private var isInstallHovered = false
+
     var body: some View {
-        VStack(spacing: 20) {
-            LanguageIconView(imageName: iconImage, size: 60)
-                .opacity(0.5)
+        VStack(spacing: DMSpace.xl) {
+            // Icon
+            ZStack {
+                Circle()
+                    .fill(DMGradient.subtle(color))
+                    .frame(width: 100, height: 100)
 
-            Text(title)
-                .font(.headline)
-                .foregroundColor(.primary)
+                LanguageIconView(imageName: iconImage, size: 48)
+                    .opacity(0.6)
+            }
 
-            Text(message)
-                .font(.callout)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
+            // Text
+            VStack(spacing: DMSpace.xs) {
+                Text(title)
+                    .font(DMTypography.title3)
+                    .foregroundColor(.primary)
 
-            VStack(spacing: 12) {
+                Text(message)
+                    .font(DMTypography.callout)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 320)
+            }
+
+            // Actions
+            VStack(spacing: DMSpace.s) {
                 Button(action: onRefresh) {
-                    HStack(spacing: 6) {
+                    HStack(spacing: DMSpace.xs) {
                         Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 14))
+                            .font(.system(size: 13, weight: .semibold))
                         Text("Refresh")
-                            .fontWeight(.medium)
+                            .font(.system(size: 14, weight: .semibold))
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 8)
+                    .padding(.horizontal, DMSpace.xl)
+                    .padding(.vertical, DMSpace.s)
+                    .background(
+                        RoundedRectangle(cornerRadius: DMRadius.control)
+                            .fill(Color.primary.opacity(isRefreshHovered ? 0.1 : 0.06))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DMRadius.control)
+                            .stroke(Color.primary.opacity(0.15), lineWidth: 1)
+                    )
+                    .foregroundColor(.primary)
                 }
-                .buttonStyle(.bordered)
-                .tint(color)
+                .buttonStyle(.plain)
+                .scaleEffect(isRefreshHovered ? 1.02 : 1)
+                .animation(DMAnimation.quick, value: isRefreshHovered)
+                .onHover { hovering in
+                    isRefreshHovered = hovering
+                }
 
                 if let installAction = onInstallNew {
                     Button(action: installAction) {
-                        HStack(spacing: 6) {
+                        HStack(spacing: DMSpace.xs) {
                             Image(systemName: "plus.circle.fill")
-                                .font(.system(size: 14))
+                                .font(.system(size: 13, weight: .semibold))
                             Text("Install New Version")
-                                .fontWeight(.medium)
+                                .font(.system(size: 14, weight: .semibold))
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 8)
+                        .padding(.horizontal, DMSpace.xl)
+                        .padding(.vertical, DMSpace.s)
+                        .background(
+                            RoundedRectangle(cornerRadius: DMRadius.control)
+                                .fill(color)
+                        )
+                        .foregroundColor(.white)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(color)
+                    .buttonStyle(.plain)
+                    .scaleEffect(isInstallHovered ? 1.02 : 1)
+                    .shadow(
+                        color: color.opacity(isInstallHovered ? 0.4 : 0.2),
+                        radius: isInstallHovered ? 12 : 6, x: 0, y: isInstallHovered ? 6 : 3
+                    )
+                    .animation(DMAnimation.quick, value: isInstallHovered)
+                    .onHover { hovering in
+                        isInstallHovered = hovering
+                    }
                 }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(40)
+        .padding(DMSpace.xxxl)
     }
 }
 
@@ -345,37 +412,41 @@ struct VersionActionBar: View {
     let color: Color
 
     var body: some View {
-        HStack(spacing: 16) {
-            // 统计信息
-            HStack(spacing: 6) {
-                Image(systemName: "chart.bar.fill")
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
+        HStack(spacing: DMSpace.m) {
+            // Stats
+            HStack(spacing: DMSpace.xs) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: DMRadius.xs)
+                        .fill(color.opacity(0.12))
+                        .frame(width: 24, height: 24)
+                    Image(systemName: "square.stack.3d.up.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(color)
+                }
 
                 Text("\(installedCount) version\(installedCount == 1 ? "" : "s") installed")
-                    .font(.callout)
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.primary)
             }
 
             Spacer()
 
-            // 安装提示
-            HStack(spacing: 6) {
+            // Hint
+            HStack(spacing: DMSpace.xs) {
                 Image(systemName: "terminal")
-                    .font(.system(size: 14))
+                    .font(.system(size: 11))
                     .foregroundColor(.secondary)
                 Text("Use Homebrew or version managers to install")
-                    .font(.caption)
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.secondary)
             }
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 14)
-        .frame(height: 52)
-        .background(.ultraThinMaterial)
+        .padding(.horizontal, DMSpace.xl)
+        .padding(.vertical, DMSpace.m)
+        .background(DMColor.controlBackground.opacity(0.8))
         .overlay(
             Rectangle()
-                .fill(Color.gray.opacity(0.15))
+                .fill(DMColor.separator.opacity(0.3))
                 .frame(height: 1),
             alignment: .bottom
         )

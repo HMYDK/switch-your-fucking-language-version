@@ -97,7 +97,10 @@ struct ContentView: View {
                                     ? config.iconSymbol : nil,
                                 color: config.color,
                                 isSelected: selection == .language(config.identifier),
-                                isCustom: config.iconType == .systemSymbol
+                                isCustom: config.iconType == .systemSymbol,
+                                onDelete: {
+                                    deleteCustomLanguage(config)
+                                }
                             ) {
                                 selection = .language(config.identifier)
                             }
@@ -186,10 +189,6 @@ struct ContentView: View {
                         metadata: updatedConfig.toMetadata(), manager: manager)
                 }
             }
-        }
-        .onAppear {
-            // 注册自定义语言
-            customLanguageManager.registerToRegistry(registry)
         }
     }
 
@@ -337,6 +336,7 @@ private struct SidebarNavItem: View {
     let color: Color
     let isSelected: Bool
     var isCustom: Bool = false
+    var onDelete: (() -> Void)? = nil
     let action: () -> Void
 
     @State private var isHovered = false
@@ -403,6 +403,18 @@ private struct SidebarNavItem: View {
                     .foregroundStyle(isSelected ? .primary : .secondary)
 
                 Spacer()
+
+                // Delete button (shown on hover)
+                if isHovered, let onDelete = onDelete {
+                    Button(action: onDelete) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.red.opacity(0.8))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Delete")
+                    .transition(.opacity)
+                }
 
                 // Selection indicator
                 if isSelected {

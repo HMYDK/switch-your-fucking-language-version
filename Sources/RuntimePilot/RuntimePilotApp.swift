@@ -14,22 +14,27 @@ enum AppInfo {
 
 @main
 struct RuntimePilotApp: App {
-    @StateObject private var registry = LanguageRegistry()
+    @StateObject private var registry: LanguageRegistry
     @StateObject private var directoryAccessManager = DirectoryAccessManager.shared
     @ObservedObject private var customLanguageManager = CustomLanguageManager.shared
     @ObservedObject private var localization = LocalizationManager.shared
 
     @State private var showOnboarding = false
 
+    init() {
+        // 执行数据迁移（从旧版本内置语言迁移到新版本自定义语言）
+        MigrationManager.shared.migrateIfNeeded()
+        
+        // 创建 registry 并立即注册所有语言（在 ContentView 创建之前）
+        let registry = LanguageRegistry()
+        CustomLanguageManager.shared.registerToRegistry(registry)
+        _registry = StateObject(wrappedValue: registry)
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView(registry: registry)
                 .onAppear {
-                    // 执行数据迁移（从旧版本内置语言迁移到新版本自定义语言）
-                    MigrationManager.shared.migrateIfNeeded()
-                    
-                    // 注册所有自定义语言到 Registry
-                    customLanguageManager.registerToRegistry(registry)
 
                     // 检查是否需要显示语言选择引导
                     if MigrationManager.shared.needsOnboarding {

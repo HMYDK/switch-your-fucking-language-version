@@ -107,10 +107,13 @@ struct ContentView: View {
                             ForEach(customLanguageManager.customLanguages) { config in
                                 SidebarNavItem(
                                     title: config.name,
-                                    icon: config.iconSymbol,
+                                    icon: config.iconType == .systemSymbol
+                                        ? config.iconSymbol : nil,
+                                    iconImage: config.iconType == .customImage
+                                        ? config.iconSymbol : nil,
                                     color: config.color,
                                     isSelected: selection == .language(config.identifier),
-                                    isCustom: true
+                                    isCustom: config.iconType == .systemSymbol
                                 ) {
                                     selection = .language(config.identifier)
                                 }

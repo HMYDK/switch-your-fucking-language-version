@@ -146,9 +146,13 @@ struct CustomLanguageEditorView: View {
                         .fill(config.color.opacity(0.15))
                         .frame(width: 44, height: 44)
 
-                    Image(systemName: config.iconSymbol)
-                        .font(.system(size: 20))
-                        .foregroundColor(config.color)
+                    if config.iconType == .customImage {
+                        LanguageIconView(imageName: config.iconSymbol, size: 24)
+                    } else {
+                        Image(systemName: config.iconSymbol)
+                            .font(.system(size: 20))
+                            .foregroundColor(config.color)
+                    }
                 }
 
                 Button(action: { showingIconPicker = true }) {
@@ -156,6 +160,7 @@ struct CustomLanguageEditorView: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
+                .disabled(config.iconType == .customImage)
             }
 
             Text(L(.customLanguageColor))
@@ -307,9 +312,13 @@ struct CustomLanguageEditorView: View {
                         .fill(config.color.opacity(0.15))
                         .frame(width: 32, height: 32)
 
-                    Image(systemName: config.iconSymbol)
-                        .font(.system(size: 14))
-                        .foregroundColor(config.color)
+                    if config.iconType == .customImage {
+                        LanguageIconView(imageName: config.iconSymbol, size: 16)
+                    } else {
+                        Image(systemName: config.iconSymbol)
+                            .font(.system(size: 14))
+                            .foregroundColor(config.color)
+                    }
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -411,6 +420,7 @@ struct CustomLanguageEditorView: View {
         config.colorHex = templateConfig.colorHex
         config.scanPaths = templateConfig.scanPaths
         config.envVarName = templateConfig.envVarName
+        config.iconType = templateConfig.iconType
     }
 
     private func save() {

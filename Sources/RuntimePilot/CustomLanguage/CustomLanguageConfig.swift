@@ -14,6 +14,7 @@ struct CustomLanguageConfig: Codable, Identifiable, Equatable {
     var envVarName: String?
     var configFileName: String
     var order: Int
+    var iconType: IconType
 
     init(
         id: UUID = UUID(),
@@ -24,7 +25,8 @@ struct CustomLanguageConfig: Codable, Identifiable, Equatable {
         scanPaths: [String] = [],
         envVarName: String? = nil,
         configFileName: String = "",
-        order: Int = 100
+        order: Int = 100,
+        iconType: IconType = .systemSymbol
     ) {
         self.id = id
         self.name = name
@@ -35,6 +37,7 @@ struct CustomLanguageConfig: Codable, Identifiable, Equatable {
         self.envVarName = envVarName
         self.configFileName = configFileName
         self.order = order
+        self.iconType = iconType
     }
 
     /// 从十六进制字符串获取颜色
@@ -70,7 +73,7 @@ struct CustomLanguageConfig: Codable, Identifiable, Equatable {
             configFileName: generatedConfigFileName,
             order: order,
             isCustom: true,
-            iconType: .systemSymbol
+            iconType: iconType
         )
     }
 
@@ -185,7 +188,7 @@ enum LanguageTemplate: String, CaseIterable, Identifiable {
             return CustomLanguageConfig(
                 name: "Ruby",
                 identifier: "ruby",
-                iconSymbol: "diamond.fill",
+                iconSymbol: "ruby",
                 colorHex: "#CC342D",
                 scanPaths: [
                     "~/.rbenv/versions",
@@ -193,58 +196,63 @@ enum LanguageTemplate: String, CaseIterable, Identifiable {
                     "/usr/local/Cellar/ruby",
                 ],
                 envVarName: "RUBY_HOME",
-                order: 100
+                order: 100,
+                iconType: .customImage
             )
         case .rust:
             return CustomLanguageConfig(
                 name: "Rust",
                 identifier: "rust",
-                iconSymbol: "gearshape.2.fill",
+                iconSymbol: "rust",
                 colorHex: "#DEA584",
                 scanPaths: [
                     "~/.rustup/toolchains"
                 ],
                 envVarName: "RUSTUP_HOME",
-                order: 101
+                order: 101,
+                iconType: .customImage
             )
         case .php:
             return CustomLanguageConfig(
                 name: "PHP",
                 identifier: "php",
-                iconSymbol: "ellipsis.curlybraces",
+                iconSymbol: "php",
                 colorHex: "#777BB4",
                 scanPaths: [
                     "/usr/local/Cellar/php",
                     "/opt/homebrew/Cellar/php",
                 ],
                 envVarName: "PHP_HOME",
-                order: 102
+                order: 102,
+                iconType: .customImage
             )
         case .dotnet:
             return CustomLanguageConfig(
                 name: ".NET",
                 identifier: "dotnet",
-                iconSymbol: "square.stack.3d.up.fill",
+                iconSymbol: "dotnet",
                 colorHex: "#512BD4",
                 scanPaths: [
                     "/usr/local/share/dotnet/sdk",
                     "~/.dotnet/sdk",
                 ],
                 envVarName: "DOTNET_ROOT",
-                order: 103
+                order: 103,
+                iconType: .customImage
             )
         case .flutter:
             return CustomLanguageConfig(
                 name: "Flutter",
                 identifier: "flutter",
-                iconSymbol: "bird.fill",
+                iconSymbol: "flutter",
                 colorHex: "#02569B",
                 scanPaths: [
                     "~/flutter",
                     "/opt/flutter",
                 ],
                 envVarName: "FLUTTER_ROOT",
-                order: 104
+                order: 104,
+                iconType: .customImage
             )
         }
     }

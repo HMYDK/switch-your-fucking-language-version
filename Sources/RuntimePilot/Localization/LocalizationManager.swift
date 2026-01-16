@@ -7,16 +7,16 @@ import SwiftUI
 enum AppLanguage: String, CaseIterable, Identifiable {
     case english = "en"
     case chinese = "zh-Hans"
-    
+
     var id: String { rawValue }
-    
+
     var displayName: String {
         switch self {
         case .english: return "English"
         case .chinese: return "中文简体"
         }
     }
-    
+
     var nativeDisplayName: String {
         switch self {
         case .english: return "English"
@@ -30,47 +30,48 @@ enum AppLanguage: String, CaseIterable, Identifiable {
 /// 本地化管理器 - 管理应用语言设置
 final class LocalizationManager: ObservableObject {
     static let shared = LocalizationManager()
-    
+
     private let userDefaultsKey = "AppLanguage"
-    
+
     @Published var currentLanguage: AppLanguage {
         didSet {
             UserDefaults.standard.set(currentLanguage.rawValue, forKey: userDefaultsKey)
         }
     }
-    
+
     private var translations: [AppLanguage: [String: String]] = [:]
-    
+
     private init() {
         // 从 UserDefaults 加载保存的语言设置
         if let savedLanguage = UserDefaults.standard.string(forKey: userDefaultsKey),
-           let language = AppLanguage(rawValue: savedLanguage) {
+            let language = AppLanguage(rawValue: savedLanguage)
+        {
             self.currentLanguage = language
         } else {
             // 默认使用英文
             self.currentLanguage = .english
         }
-        
+
         // 加载翻译
         loadTranslations()
     }
-    
+
     private func loadTranslations() {
         translations[.english] = englishStrings
         translations[.chinese] = chineseStrings
     }
-    
+
     /// 获取本地化字符串
     func localized(_ key: LocalizedKey) -> String {
         return translations[currentLanguage]?[key.rawValue] ?? key.rawValue
     }
-    
+
     /// 获取带参数的本地化字符串
     func localized(_ key: LocalizedKey, args: CVarArg...) -> String {
         let format = translations[currentLanguage]?[key.rawValue] ?? key.rawValue
         return String(format: format, arguments: args)
     }
-    
+
     /// 设置语言
     func setLanguage(_ language: AppLanguage) {
         currentLanguage = language
@@ -83,14 +84,15 @@ private let englishStrings: [String: String] = [
     // App
     "app.name": "RuntimePilot",
     "app.tagline": "Dev Environment Manager",
-    
+
     // Navigation
     "nav.dashboard": "Dashboard",
     "nav.environments": "ENVIRONMENTS",
     "nav.customLanguages": "CUSTOM LANGUAGES",
     "nav.selectEnvironment": "Select an Environment",
     "nav.selectEnvironmentHint": "Choose a language from the sidebar to manage versions",
-    
+    "nav.settings": "Settings",
+
     // Dashboard
     "dashboard.title": "Dashboard",
     "dashboard.subtitle": "Manage your development environments",
@@ -113,10 +115,11 @@ private let englishStrings: [String: String] = [
     "dashboard.noVersions": "No versions detected",
     "dashboard.grantAccess": "Grant directory access to scan for installed versions",
     "dashboard.manageAccess": "Manage Access",
-    
+
     // Generic Language View
     "language.noVersionsFound": "No %@ Versions Found",
-    "language.installHint": "Install versions using Homebrew, NVM, pyenv, or other version managers, then refresh.",
+    "language.installHint":
+        "Install versions using Homebrew, NVM, pyenv, or other version managers, then refresh.",
     "language.manageVersions": "Manage installed versions and your active environment",
     "language.active": "Active",
     "language.source": "Source",
@@ -126,7 +129,7 @@ private let englishStrings: [String: String] = [
     "language.current": "CURRENT",
     "language.use": "Use",
     "language.versions": "versions",
-    
+
     // Shared Views
     "shared.homebrew": "Homebrew",
     "shared.setupRequired": "Setup Required",
@@ -144,7 +147,7 @@ private let englishStrings: [String: String] = [
     "shared.remove": "Remove",
     "shared.done": "Done",
     "shared.close": "Close",
-    
+
     // Onboarding
     "onboarding.welcome": "Welcome to RuntimePilot",
     "onboarding.grantAccess": "Grant access to scan your development environment versions",
@@ -154,7 +157,7 @@ private let englishStrings: [String: String] = [
     "onboarding.selectFolder": "Select Folder",
     "onboarding.authorized": "Authorized",
     "onboarding.notAuthorized": "Not Authorized",
-    
+
     // Settings
     "settings.title": "Settings",
     "settings.general": "General",
@@ -162,13 +165,30 @@ private let englishStrings: [String: String] = [
     "settings.languageDescription": "Choose your preferred interface language",
     "settings.appearance": "Appearance",
     "settings.about": "About",
-    
+    "settings.scanPaths": "Scan Paths",
+
+    // Scan Paths
+    "scanPath.description":
+        "Manage version scan paths for each language. Built-in paths cannot be modified, but you can add custom paths.",
+    "scanPath.builtIn": "Default Scan Paths",
+    "scanPath.custom": "Custom Scan Paths",
+    "scanPath.noCustom": "No custom paths added",
+    "scanPath.addCustom": "Add Custom Path",
+    "scanPath.placeholder": "~/path/to/versions",
+    "scanPath.selectFolder": "Select a directory to scan for versions",
+    "scanPath.exists": "Available",
+    "scanPath.notExists": "Not found",
+    "scanPath.needsAuth": "Needs authorization",
+    "scanPath.versionCount": "%d versions found",
+    "scanPath.scanning": "Scanning...",
+    "scanPath.summary": "%d paths, %d available",
+
     // Language Names
     "language.java": "Java JDK",
     "language.node": "Node.js",
     "language.python": "Python",
     "language.go": "Go",
-    
+
     // Custom Language
     "customLanguage.title": "Custom Languages",
     "customLanguage.add": "Add Language",
@@ -187,7 +207,7 @@ private let englishStrings: [String: String] = [
     "customLanguage.deleteConfirm": "Are you sure you want to delete this language?",
     "customLanguage.noCustomLanguages": "No custom languages",
     "customLanguage.addHint": "Click + to add a custom language",
-    
+
     // Menu
     "menu.tools": "Tools",
     "menu.refreshAll": "Refresh All",
@@ -201,14 +221,15 @@ private let chineseStrings: [String: String] = [
     // App
     "app.name": "RuntimePilot",
     "app.tagline": "开发环境管理器",
-    
+
     // Navigation
     "nav.dashboard": "仪表盘",
     "nav.environments": "开发环境",
     "nav.customLanguages": "自定义语言",
     "nav.selectEnvironment": "选择一个环境",
     "nav.selectEnvironmentHint": "从侧边栏选择一种语言来管理版本",
-    
+    "nav.settings": "设置",
+
     // Dashboard
     "dashboard.title": "仪表盘",
     "dashboard.subtitle": "管理您的开发环境",
@@ -231,7 +252,7 @@ private let chineseStrings: [String: String] = [
     "dashboard.noVersions": "未检测到版本",
     "dashboard.grantAccess": "授权目录访问以扫描已安装的版本",
     "dashboard.manageAccess": "管理权限",
-    
+
     // Generic Language View
     "language.noVersionsFound": "未找到 %@ 版本",
     "language.installHint": "使用 Homebrew、NVM、pyenv 或其他版本管理器安装版本，然后刷新。",
@@ -244,7 +265,7 @@ private let chineseStrings: [String: String] = [
     "language.current": "当前",
     "language.use": "使用",
     "language.versions": "个版本",
-    
+
     // Shared Views
     "shared.homebrew": "Homebrew",
     "shared.setupRequired": "需要配置",
@@ -262,7 +283,7 @@ private let chineseStrings: [String: String] = [
     "shared.remove": "移除",
     "shared.done": "完成",
     "shared.close": "关闭",
-    
+
     // Onboarding
     "onboarding.welcome": "欢迎使用 RuntimePilot",
     "onboarding.grantAccess": "授权访问以扫描您的开发环境版本",
@@ -272,7 +293,7 @@ private let chineseStrings: [String: String] = [
     "onboarding.selectFolder": "选择文件夹",
     "onboarding.authorized": "已授权",
     "onboarding.notAuthorized": "未授权",
-    
+
     // Settings
     "settings.title": "设置",
     "settings.general": "通用",
@@ -280,13 +301,29 @@ private let chineseStrings: [String: String] = [
     "settings.languageDescription": "选择您偏好的界面语言",
     "settings.appearance": "外观",
     "settings.about": "关于",
-    
+    "settings.scanPaths": "扫描路径",
+
+    // Scan Paths
+    "scanPath.description": "管理各语言的版本扫描路径。内置路径不可修改，但您可以添加自定义路径。",
+    "scanPath.builtIn": "默认扫描路径",
+    "scanPath.custom": "自定义扫描路径",
+    "scanPath.noCustom": "未添加自定义路径",
+    "scanPath.addCustom": "添加自定义路径",
+    "scanPath.placeholder": "~/path/to/versions",
+    "scanPath.selectFolder": "选择要扫描的版本目录",
+    "scanPath.exists": "可用",
+    "scanPath.notExists": "未找到",
+    "scanPath.needsAuth": "需要授权",
+    "scanPath.versionCount": "找到 %d 个版本",
+    "scanPath.scanning": "扫描中...",
+    "scanPath.summary": "%d 个路径，%d 个可用",
+
     // Language Names
     "language.java": "Java JDK",
     "language.node": "Node.js",
     "language.python": "Python",
     "language.go": "Go",
-    
+
     // Custom Language
     "customLanguage.title": "自定义语言",
     "customLanguage.add": "添加语言",
@@ -305,7 +342,7 @@ private let chineseStrings: [String: String] = [
     "customLanguage.deleteConfirm": "确定要删除这个语言吗？",
     "customLanguage.noCustomLanguages": "没有自定义语言",
     "customLanguage.addHint": "点击 + 添加自定义语言",
-    
+
     // Menu
     "menu.tools": "工具",
     "menu.refreshAll": "刷新全部",

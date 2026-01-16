@@ -14,6 +14,7 @@ enum LocalizedKey: String {
     case navCustomLanguages = "nav.customLanguages"
     case navSelectEnvironment = "nav.selectEnvironment"
     case navSelectEnvironmentHint = "nav.selectEnvironmentHint"
+    case navSettings = "nav.settings"
 
     // Dashboard
     case dashboardTitle = "dashboard.title"
@@ -86,6 +87,22 @@ enum LocalizedKey: String {
     case settingsLanguageDescription = "settings.languageDescription"
     case settingsAppearance = "settings.appearance"
     case settingsAbout = "settings.about"
+    case settingsScanPaths = "settings.scanPaths"
+
+    // Scan Paths
+    case scanPathDescription = "scanPath.description"
+    case scanPathBuiltIn = "scanPath.builtIn"
+    case scanPathCustom = "scanPath.custom"
+    case scanPathNoCustom = "scanPath.noCustom"
+    case scanPathAddCustom = "scanPath.addCustom"
+    case scanPathPlaceholder = "scanPath.placeholder"
+    case scanPathSelectFolder = "scanPath.selectFolder"
+    case scanPathExists = "scanPath.exists"
+    case scanPathNotExists = "scanPath.notExists"
+    case scanPathNeedsAuth = "scanPath.needsAuth"
+    case scanPathVersionCount = "scanPath.versionCount"
+    case scanPathScanning = "scanPath.scanning"
+    case scanPathSummary = "scanPath.summary"
 
     // Language Names
     case languageJava = "language.java"

@@ -85,6 +85,26 @@ class GoManager: ObservableObject, LanguageManager {
             }
         }
 
+        // 5. Custom scan paths
+        for customPath in ScanPathConfigManager.shared.getCustomPaths(for: "go") {
+            let expandedPath = (customPath as NSString).expandingTildeInPath
+            if let items = try? fileManager.contentsOfDirectory(atPath: expandedPath) {
+                for item in items {
+                    if item.hasPrefix(".") { continue }
+                    let fullPath = (expandedPath as NSString).appendingPathComponent(item)
+                    let binPath = (fullPath as NSString).appendingPathComponent("bin")
+                    if fileManager.fileExists(
+                        atPath: (binPath as NSString).appendingPathComponent("go"))
+                    {
+                        if !versions.contains(where: { $0.path == fullPath }) {
+                            versions.append(
+                                GoVersion(path: fullPath, version: item, source: "Custom"))
+                        }
+                    }
+                }
+            }
+        }
+
         return versions
     }
 

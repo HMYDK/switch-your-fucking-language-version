@@ -11,8 +11,13 @@ struct SettingsView: View {
                 .tabItem {
                     Label(L(.settingsGeneral), systemImage: "gear")
                 }
+
+            ScanPathSettingsView()
+                .tabItem {
+                    Label(L(.settingsScanPaths), systemImage: "folder.badge.gearshape")
+                }
         }
-        .frame(width: 450, height: 250)
+        .frame(width: 650, height: 500)
     }
 }
 

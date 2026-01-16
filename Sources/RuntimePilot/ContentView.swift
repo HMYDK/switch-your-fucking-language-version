@@ -15,6 +15,7 @@ struct ContentView: View {
     @State private var selection: Route? = .dashboard
     @State private var showingCustomLanguageEditor = false
     @State private var editingCustomLanguage: CustomLanguageConfig?
+    @State private var isSettingsHovered = false
 
     init(registry: LanguageRegistry) {
         self.registry = registry
@@ -134,6 +135,16 @@ struct ContentView: View {
                     .padding(.horizontal, 10)
                     .padding(.bottom, 16)
                 }
+
+                Spacer()
+
+                Divider()
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+
+                settingsButton
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 16)
             }
             .background(
                 LinearGradient(
@@ -257,6 +268,76 @@ struct ContentView: View {
         }
         .buttonStyle(.plain)
         .padding(.top, DMSpace.s)
+    }
+
+    // MARK: - Settings Button
+
+    @ViewBuilder
+    private var settingsButton: some View {
+        if #available(macOS 14.0, *) {
+            SettingsLink {
+                settingsButtonContent
+            }
+            .buttonStyle(.plain)
+            .scaleEffect(isSettingsHovered ? 1.02 : 1)
+            .animation(.easeOut(duration: 0.15), value: isSettingsHovered)
+            .onHover { hovering in
+                isSettingsHovered = hovering
+            }
+        } else {
+            Button {
+                NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
+            } label: {
+                settingsButtonContent
+            }
+            .buttonStyle(.plain)
+            .scaleEffect(isSettingsHovered ? 1.02 : 1)
+            .animation(.easeOut(duration: 0.15), value: isSettingsHovered)
+            .onHover { hovering in
+                isSettingsHovered = hovering
+            }
+        }
+    }
+
+    private var settingsButtonContent: some View {
+        HStack(spacing: 10) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.primary.opacity(isSettingsHovered ? 0.08 : 0.05),
+                                Color.primary.opacity(isSettingsHovered ? 0.04 : 0.02),
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(
+                        Color.primary.opacity(isSettingsHovered ? 0.15 : 0.1),
+                        style: StrokeStyle(lineWidth: 1, dash: [4])
+                    )
+
+                Image(systemName: "gear")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.secondary)
+            }
+            .frame(width: 32, height: 32)
+
+            Text(L(.navSettings))
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.secondary)
+
+            Spacer()
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.primary.opacity(isSettingsHovered ? 0.04 : 0))
+        )
     }
 
     // MARK: - Actions

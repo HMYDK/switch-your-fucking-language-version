@@ -1,56 +1,11 @@
 import AppKit
 import SwiftUI
 
-enum NavigationItem: String, CaseIterable, Identifiable {
-    case dashboard
-    case java
-    case node
-    case python
-    case go
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .dashboard: return "Dashboard"
-        case .java: return "Java JDK"
-        case .node: return "Node.js"
-        case .python: return "Python"
-        case .go: return "Go"
-        }
-    }
-
-    var iconImage: String {
-        switch self {
-        case .dashboard: return ""
-        case .java: return "java"
-        case .node: return "nodejs"
-        case .python: return "python"
-        case .go: return "go"
-        }
-    }
-
-    var iconSymbol: String? {
-        switch self {
-        case .dashboard: return "square.grid.2x2.fill"
-        default: return nil
-        }
-    }
-
-    var color: Color {
-        switch self {
-        case .dashboard: return .blue
-        case .java: return .orange
-        case .node: return .green
-        case .python: return .indigo
-        case .go: return .cyan
-        }
-    }
-}
-
 struct ContentView: View {
     @ObservedObject var registry: LanguageRegistry
     @StateObject private var dashboardViewModel: DashboardViewModel
+    @ObservedObject private var localization = LocalizationManager.shared
+    @ObservedObject private var customLanguageManager = CustomLanguageManager.shared
 
     enum Route: Hashable {
         case dashboard
@@ -58,6 +13,8 @@ struct ContentView: View {
     }
 
     @State private var selection: Route? = .dashboard
+    @State private var showingCustomLanguageEditor = false
+    @State private var editingCustomLanguage: CustomLanguageConfig?
 
     init(registry: LanguageRegistry) {
         self.registry = registry
@@ -101,10 +58,10 @@ struct ContentView: View {
                     .shadow(color: Color.blue.opacity(0.2), radius: 4, x: 0, y: 2)
 
                     VStack(alignment: .leading, spacing: 1) {
-                        Text("RuntimePilot")
+                        Text(L(.appName))
                             .font(.system(size: 14, weight: .bold))
                             .foregroundStyle(.primary)
-                        Text("Dev Environment Manager")
+                        Text(L(.appTagline))
                             .font(.system(size: 9, weight: .medium))
                             .foregroundStyle(.secondary)
                     }
@@ -113,30 +70,15 @@ struct ContentView: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 14)
 
-                // Section Header
-                HStack(spacing: 6) {
-                    RoundedRectangle(cornerRadius: 1)
-                        .fill(Color.secondary.opacity(0.3))
-                        .frame(width: 12, height: 2)
-                    Text("ENVIRONMENTS")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundColor(.secondary.opacity(0.6))
-                        .tracking(1.2)
-                    RoundedRectangle(cornerRadius: 1)
-                        .fill(Color.secondary.opacity(0.3))
-                        .frame(height: 2)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 4)
-                .padding(.bottom, 10)
-                .padding(.horizontal, 14)
+                // Section Header - Environments
+                sectionHeader(title: L(.navEnvironments))
 
                 // Navigation Items
                 ScrollView {
                     VStack(spacing: 4) {
                         // Dashboard
                         SidebarNavItem(
-                            title: "Dashboard",
+                            title: L(.navDashboard),
                             icon: "square.grid.2x2.fill",
                             color: .blue,
                             isSelected: selection == .dashboard
@@ -144,8 +86,8 @@ struct ContentView: View {
                             selection = .dashboard
                         }
 
-                        // Languages
-                        ForEach(registry.allLanguages) { language in
+                        // Built-in Languages
+                        ForEach(registry.builtInLanguages) { language in
                             let metadata = language.metadata
                             SidebarNavItem(
                                 title: metadata.displayName,
@@ -156,6 +98,35 @@ struct ContentView: View {
                                 selection = .language(metadata.id)
                             }
                         }
+
+                        // Custom Languages Section
+                        if !customLanguageManager.customLanguages.isEmpty {
+                            sectionHeader(title: L(.navCustomLanguages))
+                                .padding(.top, DMSpace.m)
+
+                            ForEach(customLanguageManager.customLanguages) { config in
+                                SidebarNavItem(
+                                    title: config.name,
+                                    icon: config.iconSymbol,
+                                    color: config.color,
+                                    isSelected: selection == .language(config.identifier),
+                                    isCustom: true
+                                ) {
+                                    selection = .language(config.identifier)
+                                }
+                                .contextMenu {
+                                    Button(L(.sharedEdit)) {
+                                        editingCustomLanguage = config
+                                    }
+                                    Button(L(.sharedDelete), role: .destructive) {
+                                        deleteCustomLanguage(config)
+                                    }
+                                }
+                            }
+                        }
+
+                        // Add Custom Language Button
+                        addCustomLanguageButton
                     }
                     .padding(.horizontal, 10)
                     .padding(.bottom, 16)
@@ -179,14 +150,24 @@ struct ContentView: View {
                         viewModel: dashboardViewModel,
                         selection: $selection
                     )
-                } else if case .language(let languageId) = selection,
-                    let language = registry.getLanguage(for: languageId)
-                {
-                    GenericLanguageView(
-                        metadata: language.metadata,
-                        manager: language.manager
-                    )
-                    .id(languageId)
+                } else if case .language(let languageId) = selection {
+                    if let language = registry.getLanguage(for: languageId) {
+                        GenericLanguageView(
+                            metadata: language.metadata,
+                            manager: language.manager
+                        )
+                        .id(languageId)
+                    } else if let config = customLanguageManager.getConfig(identifier: languageId),
+                        let manager = customLanguageManager.getVersionManager(for: languageId)
+                    {
+                        GenericLanguageView(
+                            metadata: config.toMetadata(),
+                            manager: AnyLanguageManager(manager)
+                        )
+                        .id(languageId)
+                    } else {
+                        EmptyDetailView()
+                    }
                 } else {
                     EmptyDetailView()
                 }
@@ -195,6 +176,96 @@ struct ContentView: View {
         }
         .frame(minWidth: 860, idealWidth: 1200, minHeight: 600, idealHeight: 800)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .sheet(isPresented: $showingCustomLanguageEditor) {
+            CustomLanguageEditorView { config in
+                // 注册新语言到 registry
+                if let manager = customLanguageManager.getVersionManager(for: config.identifier) {
+                    registry.register(
+                        metadata: config.toMetadata(), manager: manager, isCustom: true)
+                }
+            }
+        }
+        .sheet(item: $editingCustomLanguage) { config in
+            CustomLanguageEditorView(config: config) { updatedConfig in
+                // 更新 registry
+                registry.unregister(id: config.identifier)
+                if let manager = customLanguageManager.getVersionManager(
+                    for: updatedConfig.identifier)
+                {
+                    registry.register(
+                        metadata: updatedConfig.toMetadata(), manager: manager, isCustom: true)
+                }
+            }
+        }
+        .onAppear {
+            // 注册自定义语言
+            customLanguageManager.registerToRegistry(registry)
+        }
+    }
+
+    // MARK: - Section Header
+
+    private func sectionHeader(title: String) -> some View {
+        HStack(spacing: 6) {
+            RoundedRectangle(cornerRadius: 1)
+                .fill(Color.secondary.opacity(0.3))
+                .frame(width: 12, height: 2)
+            Text(title)
+                .font(.system(size: 9, weight: .bold))
+                .foregroundColor(.secondary.opacity(0.6))
+                .tracking(1.2)
+            RoundedRectangle(cornerRadius: 1)
+                .fill(Color.secondary.opacity(0.3))
+                .frame(height: 2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 4)
+        .padding(.bottom, 10)
+        .padding(.horizontal, 14)
+    }
+
+    // MARK: - Add Custom Language Button
+
+    private var addCustomLanguageButton: some View {
+        Button(action: { showingCustomLanguageEditor = true }) {
+            HStack(spacing: 10) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.primary.opacity(0.05))
+
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(
+                            Color.primary.opacity(0.1), style: StrokeStyle(lineWidth: 1, dash: [4]))
+
+                    Image(systemName: "plus")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+                .frame(width: 32, height: 32)
+
+                Text(L(.customLanguageAdd))
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.secondary)
+
+                Spacer()
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+        }
+        .buttonStyle(.plain)
+        .padding(.top, DMSpace.s)
+    }
+
+    // MARK: - Actions
+
+    private func deleteCustomLanguage(_ config: CustomLanguageConfig) {
+        registry.unregister(id: config.identifier)
+        customLanguageManager.deleteLanguage(id: config.id)
+
+        // 如果当前选中的是被删除的语言，切换到 Dashboard
+        if case .language(let id) = selection, id == config.identifier {
+            selection = .dashboard
+        }
     }
 }
 
@@ -205,6 +276,7 @@ private struct SidebarNavItem: View {
     var iconImage: String? = nil
     let color: Color
     let isSelected: Bool
+    var isCustom: Bool = false
     let action: () -> Void
 
     @State private var isHovered = false
@@ -244,7 +316,12 @@ private struct SidebarNavItem: View {
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundStyle(isSelected ? color : .secondary)
                         } else if let iconImage {
-                            if let url = Bundle.module.url(
+                            if isCustom {
+                                // 自定义语言使用 SF Symbol
+                                Image(systemName: iconImage)
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundStyle(isSelected ? color : .secondary)
+                            } else if let url = Bundle.module.url(
                                 forResource: iconImage, withExtension: "png"),
                                 let nsImage = NSImage(contentsOf: url)
                             {
@@ -329,10 +406,10 @@ private struct EmptyDetailView: View {
             }
 
             VStack(spacing: DMSpace.xs) {
-                Text("Select an Environment")
+                Text(L(.navSelectEnvironment))
                     .font(DMTypography.title3)
                     .foregroundColor(.primary)
-                Text("Choose a language from the sidebar to manage versions")
+                Text(L(.navSelectEnvironmentHint))
                     .font(DMTypography.caption)
                     .foregroundColor(.secondary)
             }

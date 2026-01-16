@@ -4,6 +4,7 @@ import SwiftUI
 struct GenericLanguageView: View {
     let metadata: LanguageMetadata
     @ObservedObject var manager: AnyLanguageManager
+    @ObservedObject private var localization = LocalizationManager.shared
 
     private var displayedVersions: [AnyLanguageVersion] {
         var sorted = manager.installedVersions.sorted { lhs, rhs in
@@ -26,9 +27,8 @@ struct GenericLanguageView: View {
             if manager.installedVersions.isEmpty {
                 ModernEmptyState(
                     iconImage: metadata.iconName,
-                    title: "No \(metadata.displayName) Versions Found",
-                    message:
-                        "Install versions using Homebrew, NVM, pyenv, or other version managers, then refresh.",
+                    title: L(.languageNoVersionsFound, metadata.displayName),
+                    message: L(.languageInstallHint),
                     color: metadata.color,
                     onRefresh: { manager.refresh() }
                 )
@@ -53,8 +53,8 @@ struct GenericLanguageView: View {
                 } label: {
                     Image(systemName: "arrow.clockwise")
                 }
-                .help("Refresh")
-                .accessibilityLabel("Refresh versions")
+                .help(L(.languageRefresh))
+                .accessibilityLabel(L(.languageRefresh))
             }
         }
     }
@@ -97,7 +97,7 @@ struct GenericLanguageView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(metadata.displayName)
                         .font(DMTypography.title2)
-                    Text("Manage installed versions and your active environment")
+                    Text(L(.languageManageVersions))
                         .font(DMTypography.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -108,14 +108,14 @@ struct GenericLanguageView: View {
                 if let active = manager.activeVersion {
                     VStack(alignment: .leading, spacing: DMSpace.s) {
                         HStack(spacing: DMSpace.xs) {
-                            DMBadge(text: "Active", accent: metadata.color)
+                            DMBadge(text: L(.languageActive), accent: metadata.color)
                             Text(active.version)
                                 .font(DMTypography.section)
                             Spacer()
                         }
 
                         DMKeyValueRow(
-                            key: "Source",
+                            key: L(.languageSource),
                             value: active.source,
                             onCopy: {
                                 NSPasteboard.general.clearContents()
@@ -124,7 +124,7 @@ struct GenericLanguageView: View {
                         )
 
                         DMKeyValueRow(
-                            key: "Path",
+                            key: L(.languagePath),
                             value: active.path,
                             isMonospaced: true,
                             onCopy: {
@@ -138,7 +138,7 @@ struct GenericLanguageView: View {
                         Image(systemName: "info.circle")
                             .foregroundStyle(.secondary)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("No active version")
+                            Text(L(.languageNoActiveVersion))
                                 .font(DMTypography.section)
                             Text("Select a version to generate environment configuration.")
                                 .font(DMTypography.caption)

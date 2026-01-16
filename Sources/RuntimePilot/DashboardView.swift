@@ -4,6 +4,7 @@ import SwiftUI
 struct DashboardView: View {
     @ObservedObject var viewModel: DashboardViewModel
     @Binding var selection: ContentView.Route?
+    @ObservedObject private var localization = LocalizationManager.shared
 
     @State private var isQuickStartExpanded: Bool
 
@@ -31,8 +32,8 @@ struct DashboardView: View {
 
                 // Environments Section
                 DMSection(
-                    title: "Environments",
-                    subtitle: "Select a language to manage versions",
+                    title: L(.dashboardEnvironments),
+                    subtitle: L(.dashboardSelectLanguage),
                     icon: "square.stack.3d.up.fill",
                     iconColor: .purple
                 ) {
@@ -54,8 +55,8 @@ struct DashboardView: View {
 
                 // Quick Start Section
                 DMSection(
-                    title: "Quick Start",
-                    subtitle: "One-time shell setup",
+                    title: L(.dashboardQuickStart),
+                    subtitle: L(.dashboardShellSetup),
                     icon: "bolt.fill",
                     iconColor: .orange
                 ) {
@@ -88,9 +89,9 @@ struct DashboardView: View {
             .shadow(color: .blue.opacity(0.2), radius: 12, x: 0, y: 4)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Dashboard")
+                Text(L(.dashboardTitle))
                     .font(DMTypography.title2)
-                Text("Manage your development environments")
+                Text(L(.dashboardSubtitle))
                     .font(DMTypography.callout)
                     .foregroundStyle(.secondary)
             }
@@ -103,21 +104,21 @@ struct DashboardView: View {
     private var statsOverview: some View {
         HStack(spacing: DMSpace.m) {
             DMStatCard(
-                title: "Active",
+                title: L(.dashboardActive),
                 value: "\(viewModel.languageStatuses.filter { $0.isConfigured }.count)",
                 icon: "checkmark.circle.fill",
                 color: .green
             )
 
             DMStatCard(
-                title: "Installed",
+                title: L(.dashboardInstalled),
                 value: "\(viewModel.languageStatuses.reduce(0) { $0 + $1.installedCount })",
                 icon: "square.stack.3d.up.fill",
                 color: .blue
             )
 
             DMStatCard(
-                title: "Languages",
+                title: L(.dashboardLanguages),
                 value: "\(viewModel.languageStatuses.count)",
                 icon: "globe",
                 color: .purple
@@ -139,7 +140,7 @@ struct DashboardView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Welcome to RuntimePilot")
+                    Text(L(.dashboardWelcome))
                         .font(DMTypography.section)
                     Text("Pick a language below, then select or install a version to get started.")
                         .font(DMTypography.callout)

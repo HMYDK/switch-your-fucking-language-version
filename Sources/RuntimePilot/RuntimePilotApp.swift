@@ -20,6 +20,7 @@ struct RuntimePilotApp: App {
     @StateObject private var goManager = GoManager()
     @StateObject private var registry = LanguageRegistry()
     @StateObject private var directoryAccessManager = DirectoryAccessManager.shared
+    @ObservedObject private var localization = LocalizationManager.shared
 
     @State private var showOnboarding = false
 
@@ -56,17 +57,22 @@ struct RuntimePilotApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.automatic)
+
+        Settings {
+            SettingsView()
+        }
+
         .commands {
             SidebarCommands()
 
             // About 菜单
             CommandGroup(replacing: .appInfo) {
-                Button("About RuntimePilot") {
+                Button(L(.menuAbout)) {
                     NSApplication.shared.orderFrontStandardAboutPanel(
                         options: [
-                            .applicationName: "RuntimePilot",
+                            .applicationName: L(.appName),
                             .applicationVersion: AppInfo.version,
-                            .credits: NSAttributedString(string: "Development Environment Manager"),
+                            .credits: NSAttributedString(string: L(.appTagline)),
                         ]
                     )
                 }
@@ -76,8 +82,8 @@ struct RuntimePilotApp: App {
             CommandGroup(replacing: .newItem) {}
 
             // Tools 菜单
-            CommandMenu("Tools") {
-                Button("Refresh All") {
+            CommandMenu(L(.menuTools)) {
+                Button(L(.menuRefreshAll)) {
                     // 刷新所有已注册的语言
                     for language in registry.allLanguages {
                         language.manager.refresh()
@@ -87,7 +93,7 @@ struct RuntimePilotApp: App {
 
                 Divider()
 
-                Button("Manage Directory Access...") {
+                Button(L(.menuManageDirectoryAccess)) {
                     showOnboarding = true
                 }
             }

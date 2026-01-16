@@ -3,92 +3,16 @@ import Foundation
 
 // MARK: - Scan Path Config Manager
 
-/// 扫描路径配置管理器 - 管理用户自定义的额外扫描路径
+/// 扫描路径状态管理器 - 提供路径状态检查和缓存功能
 final class ScanPathConfigManager: ObservableObject {
     static let shared = ScanPathConfigManager()
-
-    private let userDefaultsKeyPrefix = "CustomScanPaths_"
-
-    /// 各语言的自定义扫描路径
-    @Published private(set) var customPaths: [String: [String]] = [:]
 
     /// 路径状态缓存
     @Published private(set) var pathStatuses: [String: PathStatus] = [:]
 
-    /// 支持的内置语言 ID
-    static let supportedLanguages = ["java", "python", "go", "node"]
-
-    private init() {
-        loadAllCustomPaths()
-    }
+    private init() {}
 
     // MARK: - Public Methods
-
-    /// 获取指定语言的所有扫描路径（内置 + 自定义）
-    func getAllScanPaths(for languageId: String) -> [ScanPathInfo] {
-        var paths = BuiltInScanPaths.paths(for: languageId)
-
-        // 添加自定义路径
-        if let custom = customPaths[languageId] {
-            for customPath in custom {
-                paths.append(
-                    ScanPathInfo(
-                        path: customPath,
-                        source: .custom,
-                        displayName: "Custom",
-                        isBuiltIn: false
-                    )
-                )
-            }
-        }
-
-        return paths
-    }
-
-    /// 获取指定语言的自定义扫描路径
-    func getCustomPaths(for languageId: String) -> [String] {
-        return customPaths[languageId] ?? []
-    }
-
-    /// 添加自定义扫描路径
-    func addCustomPath(for languageId: String, path: String) {
-        var paths = customPaths[languageId] ?? []
-
-        // 规范化路径
-        let normalizedPath = normalizePath(path)
-
-        // 检查是否已存在
-        guard !paths.contains(normalizedPath) else { return }
-
-        // 检查是否与内置路径重复
-        let builtInPaths = BuiltInScanPaths.paths(for: languageId)
-        let expandedBuiltIn = builtInPaths.map { $0.expandedPath }
-        let expandedNew = (normalizedPath as NSString).expandingTildeInPath
-        guard
-            !expandedBuiltIn.contains(where: {
-                $0.contains(expandedNew) || expandedNew.contains($0)
-            })
-        else { return }
-
-        paths.append(normalizedPath)
-        customPaths[languageId] = paths
-        saveCustomPaths(for: languageId)
-
-        // 检查新路径状态
-        checkPathStatusAsync(normalizedPath)
-    }
-
-    /// 移除自定义扫描路径
-    func removeCustomPath(for languageId: String, path: String) {
-        guard var paths = customPaths[languageId] else { return }
-
-        paths.removeAll { $0 == path }
-        customPaths[languageId] = paths
-        saveCustomPaths(for: languageId)
-
-        // 清除状态缓存
-        pathStatuses.removeValue(forKey: path)
-    }
 
     /// 检查路径状态
     func checkPathStatus(_ path: String) -> PathStatus {
@@ -171,15 +95,11 @@ final class ScanPathConfigManager: ObservableObject {
         }
     }
 
-    /// 刷新所有路径状态
-    func refreshAllPathStatuses() {
-        pathStatuses.removeAll()
-
-        for languageId in Self.supportedLanguages {
-            let allPaths = getAllScanPaths(for: languageId)
-            for pathInfo in allPaths {
-                checkPathStatusAsync(pathInfo.path)
-            }
+    /// 刷新指定路径列表的状态
+    func refreshPathStatuses(for paths: [String]) {
+        for path in paths {
+            pathStatuses.removeValue(forKey: path)
+            checkPathStatusAsync(path)
         }
     }
 
@@ -189,36 +109,6 @@ final class ScanPathConfigManager: ObservableObject {
     }
 
     // MARK: - Private Methods
-
-    private func loadAllCustomPaths() {
-        for languageId in Self.supportedLanguages {
-            loadCustomPaths(for: languageId)
-        }
-    }
-
-    private func loadCustomPaths(for languageId: String) {
-        let key = userDefaultsKeyPrefix + languageId
-        if let paths = UserDefaults.standard.stringArray(forKey: key) {
-            customPaths[languageId] = paths
-        }
-    }
-
-    private func saveCustomPaths(for languageId: String) {
-        let key = userDefaultsKeyPrefix + languageId
-        let paths = customPaths[languageId] ?? []
-        UserDefaults.standard.set(paths, forKey: key)
-    }
-
-    private func normalizePath(_ path: String) -> String {
-        var normalized = path.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        // 移除末尾的斜杠
-        while normalized.hasSuffix("/") && normalized.count > 1 {
-            normalized = String(normalized.dropLast())
-        }
-
-        return normalized
-    }
 
     /// 解析通配符路径，返回匹配的实际路径列表
     private func resolveWildcardPath(_ path: String) -> [String] {
@@ -243,7 +133,7 @@ final class ScanPathConfigManager: ObservableObject {
                 }
 
                 return items.filter { item in
-                    item == prefix || item.hasPrefix("\(prefix)@")
+                    item == prefix || item.hasPrefix("\(prefix)@") || item.hasPrefix(prefix)
                 }.map { "\(root)/\($0)" }
             }
         }

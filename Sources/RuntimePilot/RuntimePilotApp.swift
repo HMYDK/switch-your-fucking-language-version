@@ -14,44 +14,35 @@ enum AppInfo {
 
 @main
 struct RuntimePilotApp: App {
-    @StateObject private var javaManager = JavaManager()
-    @StateObject private var nodeManager = NodeManager()
-    @StateObject private var pythonManager = PythonManager()
-    @StateObject private var goManager = GoManager()
     @StateObject private var registry = LanguageRegistry()
     @StateObject private var directoryAccessManager = DirectoryAccessManager.shared
+    @ObservedObject private var customLanguageManager = CustomLanguageManager.shared
     @ObservedObject private var localization = LocalizationManager.shared
 
     @State private var showOnboarding = false
-
-    init() {
-        // 注册所有语言
-        setupRegistry()
-    }
-
-    private func setupRegistry() {
-        // 注意:这里在init中调用,需要延迟到body中执行
-    }
 
     var body: some Scene {
         WindowGroup {
             ContentView(registry: registry)
                 .onAppear {
-                    // 在视图出现时注册语言
-                    registry.register(metadata: .java, manager: javaManager)
-                    registry.register(metadata: .node, manager: nodeManager)
-                    registry.register(metadata: .python, manager: pythonManager)
-                    registry.register(metadata: .go, manager: goManager)
+                    // 执行数据迁移（从旧版本内置语言迁移到新版本自定义语言）
+                    MigrationManager.shared.migrateIfNeeded()
+                    
+                    // 注册所有自定义语言到 Registry
+                    customLanguageManager.registerToRegistry(registry)
 
-                    // 检查是否需要显示引导
-                    if directoryAccessManager.needsOnboarding {
+                    // 检查是否需要显示语言选择引导
+                    if MigrationManager.shared.needsOnboarding {
+                        showOnboarding = true
+                    } else if directoryAccessManager.needsOnboarding {
                         showOnboarding = true
                     }
                 }
                 .sheet(isPresented: $showOnboarding) {
                     OnboardingView(
                         accessManager: directoryAccessManager,
-                        isPresented: $showOnboarding
+                        isPresented: $showOnboarding,
+                        registry: registry
                     )
                 }
         }
@@ -85,9 +76,7 @@ struct RuntimePilotApp: App {
             CommandMenu(L(.menuTools)) {
                 Button(L(.menuRefreshAll)) {
                     // 刷新所有已注册的语言
-                    for language in registry.allLanguages {
-                        language.manager.refresh()
-                    }
+                    customLanguageManager.refreshAll()
                 }
                 .keyboardShortcut("r", modifiers: .command)
 

@@ -10,7 +10,7 @@ struct LanguageMetadata: Identifiable {
     let color: Color
     let configFileName: String
     let order: Int
-    
+
     init(
         id: String,
         displayName: String,
@@ -26,44 +26,4 @@ struct LanguageMetadata: Identifiable {
         self.configFileName = configFileName
         self.order = order
     }
-}
-
-// MARK: - Predefined Language Metadata
-
-extension LanguageMetadata {
-    static let java = LanguageMetadata(
-        id: "java",
-        displayName: "Java JDK",
-        iconName: "java",
-        color: .orange,
-        configFileName: "java_env.sh",
-        order: 1
-    )
-    
-    static let node = LanguageMetadata(
-        id: "node",
-        displayName: "Node.js",
-        iconName: "nodejs",
-        color: .green,
-        configFileName: "node_env.sh",
-        order: 2
-    )
-    
-    static let python = LanguageMetadata(
-        id: "python",
-        displayName: "Python",
-        iconName: "python",
-        color: .indigo,
-        configFileName: "python_env.sh",
-        order: 3
-    )
-    
-    static let go = LanguageMetadata(
-        id: "go",
-        displayName: "Go",
-        iconName: "go",
-        color: .cyan,
-        configFileName: "go_env.sh",
-        order: 4
-    )
 }

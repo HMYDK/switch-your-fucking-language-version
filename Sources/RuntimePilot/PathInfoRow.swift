@@ -176,7 +176,7 @@ struct PathInfoRow: View {
     private var iconForSource: String {
         switch pathInfo.source {
         case .homebrew: return "mug.fill"
-        case .pyenv, .nvm, .gvm: return "terminal.fill"
+        case .pyenv, .nvm, .gvm, .rbenv, .rvm, .rustup: return "terminal.fill"
         case .asdf: return "cube.fill"
         case .javaHome: return "building.columns.fill"
         case .system: return "desktopcomputer"
@@ -191,6 +191,9 @@ struct PathInfoRow: View {
         case .nvm: return .green
         case .gvm: return .cyan
         case .asdf: return .purple
+        case .rbenv: return .red
+        case .rvm: return .red
+        case .rustup: return .orange
         case .javaHome: return .orange
         case .system: return .gray
         case .custom: return .blue

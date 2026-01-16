@@ -174,6 +174,12 @@ extension LanguageMetadata {
 
 /// 预设语言模板，方便用户快速添加常见语言
 enum LanguageTemplate: String, CaseIterable, Identifiable {
+    // 常用语言（原内置）
+    case java
+    case node
+    case python
+    case go
+    // 其他语言
     case ruby
     case rust
     case php
@@ -184,6 +190,68 @@ enum LanguageTemplate: String, CaseIterable, Identifiable {
 
     var config: CustomLanguageConfig {
         switch self {
+        case .java:
+            return CustomLanguageConfig(
+                name: "Java JDK",
+                identifier: "java",
+                iconSymbol: "java",
+                colorHex: "#F89820",
+                scanPaths: [
+                    "/Library/Java/JavaVirtualMachines",
+                    "/opt/homebrew/Cellar/openjdk*",
+                    "/usr/local/Cellar/openjdk*",
+                ],
+                envVarName: "JAVA_HOME",
+                order: 1,
+                iconType: .customImage
+            )
+        case .node:
+            return CustomLanguageConfig(
+                name: "Node.js",
+                identifier: "node",
+                iconSymbol: "nodejs",
+                colorHex: "#5FA04E",
+                scanPaths: [
+                    "/opt/homebrew/Cellar/node*",
+                    "/usr/local/Cellar/node*",
+                    "~/.nvm/versions/node",
+                ],
+                envVarName: "NODE_HOME",
+                order: 2,
+                iconType: .customImage
+            )
+        case .python:
+            return CustomLanguageConfig(
+                name: "Python",
+                identifier: "python",
+                iconSymbol: "python",
+                colorHex: "#3776AB",
+                scanPaths: [
+                    "/opt/homebrew/Cellar/python@*",
+                    "/usr/local/Cellar/python@*",
+                    "~/.pyenv/versions",
+                    "~/.asdf/installs/python",
+                ],
+                envVarName: "PYTHON_HOME",
+                order: 3,
+                iconType: .customImage
+            )
+        case .go:
+            return CustomLanguageConfig(
+                name: "Go",
+                identifier: "go",
+                iconSymbol: "go",
+                colorHex: "#00ADD8",
+                scanPaths: [
+                    "/opt/homebrew/Cellar/go*",
+                    "/usr/local/Cellar/go*",
+                    "~/.gvm/gos",
+                    "~/.asdf/installs/golang",
+                ],
+                envVarName: "GOROOT",
+                order: 4,
+                iconType: .customImage
+            )
         case .ruby:
             return CustomLanguageConfig(
                 name: "Ruby",
@@ -193,7 +261,8 @@ enum LanguageTemplate: String, CaseIterable, Identifiable {
                 scanPaths: [
                     "~/.rbenv/versions",
                     "~/.rvm/rubies",
-                    "/usr/local/Cellar/ruby",
+                    "/opt/homebrew/Cellar/ruby*",
+                    "/usr/local/Cellar/ruby*",
                 ],
                 envVarName: "RUBY_HOME",
                 order: 100,
@@ -219,8 +288,8 @@ enum LanguageTemplate: String, CaseIterable, Identifiable {
                 iconSymbol: "php",
                 colorHex: "#777BB4",
                 scanPaths: [
-                    "/usr/local/Cellar/php",
-                    "/opt/homebrew/Cellar/php",
+                    "/opt/homebrew/Cellar/php*",
+                    "/usr/local/Cellar/php*",
                 ],
                 envVarName: "PHP_HOME",
                 order: 102,
@@ -259,5 +328,10 @@ enum LanguageTemplate: String, CaseIterable, Identifiable {
 
     var displayName: String {
         config.name
+    }
+
+    /// 推荐的默认模板（首次使用时预选）
+    static var recommended: Set<LanguageTemplate> {
+        [.java, .node, .python, .go]
     }
 }

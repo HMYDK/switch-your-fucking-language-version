@@ -87,44 +87,26 @@ struct ContentView: View {
                             selection = .dashboard
                         }
 
-                        // Built-in Languages
-                        ForEach(registry.builtInLanguages) { language in
-                            let metadata = language.metadata
+                        // All Languages (unified list)
+                        ForEach(customLanguageManager.customLanguages) { config in
                             SidebarNavItem(
-                                title: metadata.displayName,
-                                iconImage: metadata.iconName,
-                                color: metadata.color,
-                                isSelected: selection == .language(metadata.id)
+                                title: config.name,
+                                icon: config.iconType == .systemSymbol
+                                    ? config.iconSymbol : nil,
+                                iconImage: config.iconType == .customImage
+                                    ? config.iconSymbol : nil,
+                                color: config.color,
+                                isSelected: selection == .language(config.identifier),
+                                isCustom: config.iconType == .systemSymbol
                             ) {
-                                selection = .language(metadata.id)
+                                selection = .language(config.identifier)
                             }
-                        }
-
-                        // Custom Languages Section
-                        if !customLanguageManager.customLanguages.isEmpty {
-                            sectionHeader(title: L(.navCustomLanguages))
-                                .padding(.top, DMSpace.m)
-
-                            ForEach(customLanguageManager.customLanguages) { config in
-                                SidebarNavItem(
-                                    title: config.name,
-                                    icon: config.iconType == .systemSymbol
-                                        ? config.iconSymbol : nil,
-                                    iconImage: config.iconType == .customImage
-                                        ? config.iconSymbol : nil,
-                                    color: config.color,
-                                    isSelected: selection == .language(config.identifier),
-                                    isCustom: config.iconType == .systemSymbol
-                                ) {
-                                    selection = .language(config.identifier)
+                            .contextMenu {
+                                Button(L(.sharedEdit)) {
+                                    editingCustomLanguage = config
                                 }
-                                .contextMenu {
-                                    Button(L(.sharedEdit)) {
-                                        editingCustomLanguage = config
-                                    }
-                                    Button(L(.sharedDelete), role: .destructive) {
-                                        deleteCustomLanguage(config)
-                                    }
+                                Button(L(.sharedDelete), role: .destructive) {
+                                    deleteCustomLanguage(config)
                                 }
                             }
                         }
@@ -165,13 +147,7 @@ struct ContentView: View {
                         selection: $selection
                     )
                 } else if case .language(let languageId) = selection {
-                    if let language = registry.getLanguage(for: languageId) {
-                        GenericLanguageView(
-                            metadata: language.metadata,
-                            manager: language.manager
-                        )
-                        .id(languageId)
-                    } else if let config = customLanguageManager.getConfig(identifier: languageId),
+                    if let config = customLanguageManager.getConfig(identifier: languageId),
                         let manager = customLanguageManager.getVersionManager(for: languageId)
                     {
                         GenericLanguageView(
@@ -195,7 +171,7 @@ struct ContentView: View {
                 // 注册新语言到 registry
                 if let manager = customLanguageManager.getVersionManager(for: config.identifier) {
                     registry.register(
-                        metadata: config.toMetadata(), manager: manager, isCustom: true)
+                        metadata: config.toMetadata(), manager: manager)
                 }
             }
         }
@@ -207,7 +183,7 @@ struct ContentView: View {
                     for: updatedConfig.identifier)
                 {
                     registry.register(
-                        metadata: updatedConfig.toMetadata(), manager: manager, isCustom: true)
+                        metadata: updatedConfig.toMetadata(), manager: manager)
                 }
             }
         }

@@ -69,6 +69,9 @@ enum LocalizedKey: String {
     case sharedRemove = "shared.remove"
     case sharedDone = "shared.done"
     case sharedClose = "shared.close"
+    case sharedSkip = "shared.skip"
+    case sharedContinue = "shared.continue"
+    case sharedBack = "shared.back"
 
     // Onboarding
     case onboardingWelcome = "onboarding.welcome"
@@ -79,6 +82,13 @@ enum LocalizedKey: String {
     case onboardingSelectFolder = "onboarding.selectFolder"
     case onboardingAuthorized = "onboarding.authorized"
     case onboardingNotAuthorized = "onboarding.notAuthorized"
+    case onboardingChooseLanguages = "onboarding.chooseLanguages"
+    case onboardingDirectoryAccess = "onboarding.directoryAccess"
+    case onboardingLanguageHint = "onboarding.languageHint"
+    case onboardingDirectoryHint = "onboarding.directoryHint"
+    case onboardingDirectoryList = "onboarding.directoryList"
+    case onboardingAccessNote = "onboarding.accessNote"
+    case onboardingSelected = "onboarding.selected"
 
     // Settings
     case settingsTitle = "settings.title"
@@ -88,6 +98,9 @@ enum LocalizedKey: String {
     case settingsAppearance = "settings.appearance"
     case settingsAbout = "settings.about"
     case settingsScanPaths = "settings.scanPaths"
+    case settingsAuthorizedDirs = "settings.authorizedDirs"
+    case settingsNoDirs = "settings.noDirs"
+    case settingsAddDir = "settings.addDir"
 
     // Scan Paths
     case scanPathDescription = "scanPath.description"
@@ -103,6 +116,10 @@ enum LocalizedKey: String {
     case scanPathVersionCount = "scanPath.versionCount"
     case scanPathScanning = "scanPath.scanning"
     case scanPathSummary = "scanPath.summary"
+    case scanPathNoLanguages = "scanPath.noLanguages"
+    case scanPathAddLanguageHint = "scanPath.addLanguageHint"
+    case scanPathConfigured = "scanPath.configured"
+    case scanPathNoConfigured = "scanPath.noConfigured"
 
     // Language Names
     case languageJava = "language.java"

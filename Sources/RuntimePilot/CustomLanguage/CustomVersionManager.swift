@@ -82,13 +82,90 @@ final class CustomVersionManager: ObservableObject, LanguageManager {
     /// 扫描所有配置路径中的版本
     private func scanVersions() -> [CustomVersion] {
         var versions: [CustomVersion] = []
+        var seenPaths = Set<String>()
 
         for scanPath in config.expandedScanPaths {
-            let scannedVersions = scanDirectory(at: scanPath)
-            versions.append(contentsOf: scannedVersions)
+            // 处理通配符路径（如 /opt/homebrew/Cellar/node*）
+            let expandedPaths = expandWildcardPath(scanPath)
+
+            for path in expandedPaths {
+                let scannedVersions = scanDirectory(at: path)
+                for version in scannedVersions {
+                    // 避免重复
+                    if !seenPaths.contains(version.path) {
+                        seenPaths.insert(version.path)
+                        versions.append(version)
+                    }
+                }
+            }
         }
 
         return versions
+    }
+
+    /// 展开通配符路径
+    private func expandWildcardPath(_ path: String) -> [String] {
+        // 如果路径不包含通配符，直接返回
+        guard path.contains("*") else {
+            return [path]
+        }
+
+        let fileManager = FileManager.default
+        var results: [String] = []
+
+        // 找到通配符前的基础路径
+        let components = path.components(separatedBy: "/")
+        var basePath = ""
+        var wildcardIndex = -1
+
+        for (index, component) in components.enumerated() {
+            if component.contains("*") {
+                wildcardIndex = index
+                break
+            }
+            if !component.isEmpty {
+                basePath += "/" + component
+            }
+        }
+
+        guard wildcardIndex >= 0, !basePath.isEmpty else {
+            return [path]
+        }
+
+        // 获取通配符模式
+        let pattern = components[wildcardIndex]
+        let regexPattern = "^" + pattern.replacingOccurrences(of: "*", with: ".*") + "$"
+
+        // 扫描基础目录
+        do {
+            let contents = try fileManager.contentsOfDirectory(atPath: basePath)
+
+            for item in contents {
+                if item.hasPrefix(".") { continue }
+
+                // 检查是否匹配通配符模式
+                if let regex = try? NSRegularExpression(pattern: regexPattern, options: []),
+                    regex.firstMatch(in: item, range: NSRange(item.startIndex..., in: item)) != nil
+                {
+                    let matchedPath = (basePath as NSString).appendingPathComponent(item)
+
+                    // 如果通配符后还有更多路径组件，递归处理
+                    if wildcardIndex + 1 < components.count {
+                        let remainingPath = components[(wildcardIndex + 1)...].joined(
+                            separator: "/")
+                        let fullPath = (matchedPath as NSString).appendingPathComponent(
+                            remainingPath)
+                        results.append(contentsOf: expandWildcardPath(fullPath))
+                    } else {
+                        results.append(matchedPath)
+                    }
+                }
+            }
+        } catch {
+            // 目录不存在或无法访问
+        }
+
+        return results.isEmpty ? [] : results
     }
 
     /// 扫描单个目录
@@ -126,12 +203,16 @@ final class CustomVersionManager: ObservableObject, LanguageManager {
                 if fileManager.fileExists(atPath: itemPath, isDirectory: &isDir), isDir.boolValue {
                     // 尝试从目录名提取版本号
                     if let version = extractVersion(from: item) {
-                        let source = detectSource(for: path)
+                        let source = detectSource(for: path, formulaName: item)
+
+                        // 获取实际的可用路径（处理特殊目录结构）
+                        let actualPath = findActualPath(for: itemPath)
+
                         versions.append(
                             CustomVersion(
                                 version: version,
                                 source: source,
-                                path: itemPath
+                                path: actualPath
                             ))
                     }
                 }
@@ -141,6 +222,34 @@ final class CustomVersionManager: ObservableObject, LanguageManager {
         }
 
         return versions
+    }
+
+    /// 查找实际可用的路径（处理特殊目录结构）
+    private func findActualPath(for basePath: String) -> String {
+        let fileManager = FileManager.default
+
+        // Java JDK: 检查 Contents/Home 结构
+        let jdkContentsHome = (basePath as NSString).appendingPathComponent("Contents/Home")
+        if fileManager.fileExists(atPath: jdkContentsHome) {
+            return jdkContentsHome
+        }
+
+        // Homebrew OpenJDK: 检查 libexec/openjdk.jdk/Contents/Home 结构
+        let homebrewJdkPath = (basePath as NSString).appendingPathComponent(
+            "libexec/openjdk.jdk/Contents/Home")
+        if fileManager.fileExists(atPath: homebrewJdkPath) {
+            return homebrewJdkPath
+        }
+
+        // Go: 检查 libexec 结构
+        let goLibexec = (basePath as NSString).appendingPathComponent("libexec")
+        let goLibexecBin = (goLibexec as NSString).appendingPathComponent("bin/go")
+        if fileManager.fileExists(atPath: goLibexecBin) {
+            return goLibexec
+        }
+
+        // 默认返回原始路径
+        return basePath
     }
 
     /// 从目录名提取版本号
@@ -178,11 +287,17 @@ final class CustomVersionManager: ObservableObject, LanguageManager {
     }
 
     /// 检测版本来源
-    private func detectSource(for path: String) -> String {
+    private func detectSource(for path: String, formulaName: String? = nil) -> String {
         let lowercasePath = path.lowercased()
 
         if lowercasePath.contains("homebrew") || lowercasePath.contains("cellar") {
+            // 检测 Homebrew formula 名称（如 node@18, python@3.13）
+            if let name = formulaName, name.contains("@") {
+                return "Homebrew (\(name))"
+            }
             return "Homebrew"
+        } else if lowercasePath.contains("/library/java/javavirtualmachines") {
+            return "System JDK"
         } else if lowercasePath.contains("rbenv") {
             return "rbenv"
         } else if lowercasePath.contains("rvm") {

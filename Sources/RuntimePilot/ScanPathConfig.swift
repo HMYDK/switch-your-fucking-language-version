@@ -9,6 +9,9 @@ enum PathSource: String, Codable, CaseIterable {
     case nvm = "nvm"
     case gvm = "gvm"
     case asdf = "asdf"
+    case rbenv = "rbenv"
+    case rvm = "rvm"
+    case rustup = "rustup"
     case javaHome = "java_home"
     case system = "system"
     case custom = "custom"
@@ -20,9 +23,39 @@ enum PathSource: String, Codable, CaseIterable {
         case .nvm: return "nvm"
         case .gvm: return "gvm"
         case .asdf: return "asdf"
-        case .javaHome: return "Java Home"
+        case .rbenv: return "rbenv"
+        case .rvm: return "rvm"
+        case .rustup: return "rustup"
+        case .javaHome: return "System JDK"
         case .system: return "System"
         case .custom: return "Custom"
+        }
+    }
+
+    /// 从路径推断来源类型
+    static func detect(from path: String) -> PathSource {
+        let lowercasePath = path.lowercased()
+
+        if lowercasePath.contains("homebrew") || lowercasePath.contains("cellar") {
+            return .homebrew
+        } else if lowercasePath.contains("pyenv") {
+            return .pyenv
+        } else if lowercasePath.contains("nvm") {
+            return .nvm
+        } else if lowercasePath.contains("gvm") {
+            return .gvm
+        } else if lowercasePath.contains("asdf") {
+            return .asdf
+        } else if lowercasePath.contains("rbenv") {
+            return .rbenv
+        } else if lowercasePath.contains("rvm") {
+            return .rvm
+        } else if lowercasePath.contains("rustup") {
+            return .rustup
+        } else if lowercasePath.contains("/library/java/javavirtualmachines") {
+            return .javaHome
+        } else {
+            return .custom
         }
     }
 }
@@ -40,14 +73,14 @@ struct ScanPathInfo: Identifiable, Equatable {
     init(
         id: UUID = UUID(),
         path: String,
-        source: PathSource,
+        source: PathSource? = nil,
         displayName: String? = nil,
-        isBuiltIn: Bool = true
+        isBuiltIn: Bool = false
     ) {
         self.id = id
         self.path = path
-        self.source = source
-        self.displayName = displayName ?? source.displayName
+        self.source = source ?? PathSource.detect(from: path)
+        self.displayName = displayName ?? self.source.displayName
         self.isBuiltIn = isBuiltIn
     }
 
@@ -71,99 +104,6 @@ struct ScanPathInfo: Identifiable, Equatable {
 
     static func == (lhs: ScanPathInfo, rhs: ScanPathInfo) -> Bool {
         lhs.id == rhs.id
-    }
-}
-
-// MARK: - Built-in Paths Definition
-
-/// 内置语言的默认扫描路径定义
-enum BuiltInScanPaths {
-    static let python: [ScanPathInfo] = [
-        ScanPathInfo(
-            path: "/opt/homebrew/Cellar/python*",
-            source: .homebrew,
-            displayName: "Homebrew (Apple Silicon)"
-        ),
-        ScanPathInfo(
-            path: "/usr/local/Cellar/python*",
-            source: .homebrew,
-            displayName: "Homebrew (Intel)"
-        ),
-        ScanPathInfo(
-            path: "~/.pyenv/versions",
-            source: .pyenv
-        ),
-        ScanPathInfo(
-            path: "~/.asdf/installs/python",
-            source: .asdf
-        ),
-    ]
-
-    static let go: [ScanPathInfo] = [
-        ScanPathInfo(
-            path: "/opt/homebrew/Cellar/go*",
-            source: .homebrew,
-            displayName: "Homebrew (Apple Silicon)"
-        ),
-        ScanPathInfo(
-            path: "/usr/local/Cellar/go*",
-            source: .homebrew,
-            displayName: "Homebrew (Intel)"
-        ),
-        ScanPathInfo(
-            path: "~/.gvm/gos",
-            source: .gvm
-        ),
-        ScanPathInfo(
-            path: "~/.asdf/installs/golang",
-            source: .asdf
-        ),
-    ]
-
-    static let node: [ScanPathInfo] = [
-        ScanPathInfo(
-            path: "/opt/homebrew/Cellar/node*",
-            source: .homebrew,
-            displayName: "Homebrew (Apple Silicon)"
-        ),
-        ScanPathInfo(
-            path: "/usr/local/Cellar/node*",
-            source: .homebrew,
-            displayName: "Homebrew (Intel)"
-        ),
-        ScanPathInfo(
-            path: "~/.nvm/versions/node",
-            source: .nvm
-        ),
-    ]
-
-    static let java: [ScanPathInfo] = [
-        ScanPathInfo(
-            path: "/Library/Java/JavaVirtualMachines",
-            source: .javaHome,
-            displayName: "System JDK"
-        ),
-        ScanPathInfo(
-            path: "/opt/homebrew/Cellar/openjdk*",
-            source: .homebrew,
-            displayName: "Homebrew (Apple Silicon)"
-        ),
-        ScanPathInfo(
-            path: "/usr/local/Cellar/openjdk*",
-            source: .homebrew,
-            displayName: "Homebrew (Intel)"
-        ),
-    ]
-
-    /// 获取指定语言的内置路径
-    static func paths(for languageId: String) -> [ScanPathInfo] {
-        switch languageId {
-        case "python": return python
-        case "go": return go
-        case "node": return node
-        case "java": return java
-        default: return []
-        }
     }
 }
 

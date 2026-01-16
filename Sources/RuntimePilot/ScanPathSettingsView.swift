@@ -7,12 +7,9 @@ import SwiftUI
 struct ScanPathSettingsView: View {
     @ObservedObject private var localization = LocalizationManager.shared
     @ObservedObject private var configManager = ScanPathConfigManager.shared
+    @ObservedObject private var customLanguageManager = CustomLanguageManager.shared
 
     @State private var expandedLanguages: Set<String> = []
-
-    private let languages: [LanguageMetadata] = [
-        .java, .python, .go, .node,
-    ]
 
     var body: some View {
         ScrollView {
@@ -21,26 +18,33 @@ struct ScanPathSettingsView: View {
                 descriptionSection
 
                 // 语言配置列表
-                ForEach(languages) { language in
-                    LanguagePathConfigCard(
-                        language: language,
-                        isExpanded: expandedLanguages.contains(language.id),
-                        onToggle: {
-                            withAnimation(DMAnimation.smooth) {
-                                if expandedLanguages.contains(language.id) {
-                                    expandedLanguages.remove(language.id)
-                                } else {
-                                    expandedLanguages.insert(language.id)
+                if customLanguageManager.customLanguages.isEmpty {
+                    emptyStateView
+                } else {
+                    ForEach(customLanguageManager.customLanguages) { config in
+                        LanguagePathConfigCard(
+                            config: config,
+                            isExpanded: expandedLanguages.contains(config.identifier),
+                            onToggle: {
+                                withAnimation(DMAnimation.smooth) {
+                                    if expandedLanguages.contains(config.identifier) {
+                                        expandedLanguages.remove(config.identifier)
+                                    } else {
+                                        expandedLanguages.insert(config.identifier)
+                                    }
                                 }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
             .padding(DMSpace.l)
         }
         .onAppear {
-            configManager.refreshAllPathStatuses()
+            // 刷新所有语言的路径状态
+            for config in customLanguageManager.customLanguages {
+                configManager.refreshPathStatuses(for: config.scanPaths)
+            }
         }
     }
 
@@ -65,40 +69,47 @@ struct ScanPathSettingsView: View {
                 .stroke(Color.blue.opacity(0.15), lineWidth: 1)
         )
     }
+
+    private var emptyStateView: some View {
+        VStack(spacing: DMSpace.m) {
+            Image(systemName: "folder.badge.questionmark")
+                .font(.system(size: 40))
+                .foregroundColor(.secondary)
+
+            Text(L(.scanPathNoLanguages))
+                .font(DMTypography.body)
+                .foregroundColor(.secondary)
+
+            Text(L(.scanPathAddLanguageHint))
+                .font(DMTypography.caption)
+                .foregroundColor(.secondary.opacity(0.8))
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, DMSpace.xxl)
+    }
 }
 
 // MARK: - Language Path Config Card
 
 /// 单个语言的路径配置卡片
 struct LanguagePathConfigCard: View {
-    let language: LanguageMetadata
+    let config: CustomLanguageConfig
     let isExpanded: Bool
     let onToggle: () -> Void
 
     @ObservedObject private var configManager = ScanPathConfigManager.shared
+    @ObservedObject private var customLanguageManager = CustomLanguageManager.shared
     @State private var newPath: String = ""
 
-    private var builtInPaths: [ScanPathInfo] {
-        BuiltInScanPaths.paths(for: language.id)
-    }
-
-    private var customPaths: [ScanPathInfo] {
-        configManager.getCustomPaths(for: language.id).map { path in
-            ScanPathInfo(
-                path: path,
-                source: .custom,
-                displayName: "Custom",
-                isBuiltIn: false
-            )
+    private var scanPaths: [ScanPathInfo] {
+        config.scanPaths.map { path in
+            ScanPathInfo(path: path)
         }
     }
 
-    private var allPaths: [ScanPathInfo] {
-        builtInPaths + customPaths
-    }
-
     private var availablePathCount: Int {
-        allPaths.filter { configManager.pathStatuses[$0.path]?.exists == true }.count
+        scanPaths.filter { configManager.pathStatuses[$0.path]?.exists == true }.count
     }
 
     var body: some View {
@@ -112,11 +123,8 @@ struct LanguagePathConfigCard: View {
                     .padding(.horizontal, DMSpace.m)
 
                 VStack(alignment: .leading, spacing: DMSpace.m) {
-                    // 内置路径
-                    builtInPathsSection
-
-                    // 自定义路径
-                    customPathsSection
+                    // 配置路径
+                    pathsSection
 
                     // 添加路径
                     addPathSection
@@ -142,19 +150,25 @@ struct LanguagePathConfigCard: View {
                 // 语言图标
                 ZStack {
                     RoundedRectangle(cornerRadius: DMRadius.control)
-                        .fill(language.color.opacity(0.15))
+                        .fill(config.color.opacity(0.15))
                         .frame(width: 36, height: 36)
 
-                    LanguageIconView(imageName: language.iconName, size: 20)
+                    if config.iconType == .customImage {
+                        LanguageIconView(imageName: config.iconSymbol, size: 20)
+                    } else {
+                        Image(systemName: config.iconSymbol)
+                            .font(.system(size: 16))
+                            .foregroundColor(config.color)
+                    }
                 }
 
                 // 语言名称
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(language.displayName)
+                    Text(config.name)
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.primary)
 
-                    Text(L(.scanPathSummary, allPaths.count, availablePathCount))
+                    Text(L(.scanPathSummary, scanPaths.count, availablePathCount))
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
                 }
@@ -173,62 +187,34 @@ struct LanguagePathConfigCard: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - Built-in Paths Section
+    // MARK: - Paths Section
 
-    private var builtInPathsSection: some View {
+    private var pathsSection: some View {
         VStack(alignment: .leading, spacing: DMSpace.s) {
             HStack {
-                Text(L(.scanPathBuiltIn))
+                Text(L(.scanPathConfigured))
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(.secondary)
 
                 Spacer()
 
-                DMBadge(text: "\(builtInPaths.count)", accent: .gray, style: .subtle)
+                DMBadge(text: "\(scanPaths.count)", accent: .gray, style: .subtle)
             }
 
-            VStack(spacing: DMSpace.xs) {
-                ForEach(builtInPaths) { pathInfo in
-                    PathInfoRow(
-                        pathInfo: pathInfo,
-                        status: configManager.pathStatuses[pathInfo.path]
-                    )
-                }
-            }
-        }
-    }
-
-    // MARK: - Custom Paths Section
-
-    private var customPathsSection: some View {
-        VStack(alignment: .leading, spacing: DMSpace.s) {
-            HStack {
-                Text(L(.scanPathCustom))
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.secondary)
-
-                Spacer()
-
-                if !customPaths.isEmpty {
-                    DMBadge(text: "\(customPaths.count)", accent: .blue, style: .subtle)
-                }
-            }
-
-            if customPaths.isEmpty {
-                Text(L(.scanPathNoCustom))
+            if scanPaths.isEmpty {
+                Text(L(.scanPathNoConfigured))
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
                     .padding(.vertical, DMSpace.xs)
             } else {
                 VStack(spacing: DMSpace.xs) {
-                    ForEach(customPaths) { pathInfo in
+                    ForEach(scanPaths) { pathInfo in
                         PathInfoRow(
                             pathInfo: pathInfo,
                             status: configManager.pathStatuses[pathInfo.path],
                             onDelete: {
                                 withAnimation(DMAnimation.smooth) {
-                                    configManager.removeCustomPath(
-                                        for: language.id, path: pathInfo.path)
+                                    removePathFromConfig(pathInfo.path)
                                 }
                             }
                         )
@@ -272,7 +258,7 @@ struct LanguagePathConfigCard: View {
     private func addPath() {
         guard !newPath.isEmpty else { return }
         withAnimation(DMAnimation.smooth) {
-            configManager.addCustomPath(for: language.id, path: newPath)
+            addPathToConfig(newPath)
             newPath = ""
         }
     }
@@ -287,9 +273,24 @@ struct LanguagePathConfigCard: View {
         if panel.runModal() == .OK, let url = panel.url {
             let path = url.path
             withAnimation(DMAnimation.smooth) {
-                configManager.addCustomPath(for: language.id, path: path)
+                addPathToConfig(path)
             }
         }
+    }
+
+    private func addPathToConfig(_ path: String) {
+        var updatedConfig = config
+        if !updatedConfig.scanPaths.contains(path) {
+            updatedConfig.scanPaths.append(path)
+            customLanguageManager.updateLanguage(updatedConfig)
+            configManager.checkPathStatusAsync(path)
+        }
+    }
+
+    private func removePathFromConfig(_ path: String) {
+        var updatedConfig = config
+        updatedConfig.scanPaths.removeAll { $0 == path }
+        customLanguageManager.updateLanguage(updatedConfig)
     }
 }
 

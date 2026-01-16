@@ -8,14 +8,12 @@ import SwiftUI
 struct RegisteredLanguage: Identifiable {
     let metadata: LanguageMetadata
     let manager: AnyLanguageManager
-    let isCustom: Bool
 
     var id: String { metadata.id }
 
-    init(metadata: LanguageMetadata, manager: AnyLanguageManager, isCustom: Bool = false) {
+    init(metadata: LanguageMetadata, manager: AnyLanguageManager) {
         self.metadata = metadata
         self.manager = manager
-        self.isCustom = isCustom
     }
 }
 
@@ -30,12 +28,11 @@ class LanguageRegistry: ObservableObject {
     /// 注册新语言
     func register<M: LanguageManager>(
         metadata: LanguageMetadata,
-        manager: M,
-        isCustom: Bool = false
+        manager: M
     ) {
         let anyManager = AnyLanguageManager(manager)
         let registered = RegisteredLanguage(
-            metadata: metadata, manager: anyManager, isCustom: isCustom)
+            metadata: metadata, manager: anyManager)
 
         languageDict[metadata.id] = registered
         updateLanguages()
@@ -50,16 +47,6 @@ class LanguageRegistry: ObservableObject {
     /// 获取所有已注册语言（按order排序）
     var allLanguages: [RegisteredLanguage] {
         languages
-    }
-
-    /// 获取内置语言
-    var builtInLanguages: [RegisteredLanguage] {
-        languages.filter { !$0.isCustom }
-    }
-
-    /// 获取自定义语言
-    var customLanguages: [RegisteredLanguage] {
-        languages.filter { $0.isCustom }
     }
 
     /// 按ID获取管理器

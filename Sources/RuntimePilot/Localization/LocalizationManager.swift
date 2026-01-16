@@ -147,16 +147,27 @@ private let englishStrings: [String: String] = [
     "shared.remove": "Remove",
     "shared.done": "Done",
     "shared.close": "Close",
+    "shared.skip": "Skip",
+    "shared.continue": "Continue",
+    "shared.back": "Back",
 
     // Onboarding
     "onboarding.welcome": "Welcome to RuntimePilot",
-    "onboarding.grantAccess": "Grant access to scan your development environment versions",
+    "onboarding.grantAccess": "Grant Access",
     "onboarding.needsAccess": "RuntimePilot needs access to scan version directories:",
     "onboarding.skipForNow": "Skip for Now",
     "onboarding.continue": "Continue",
     "onboarding.selectFolder": "Select Folder",
     "onboarding.authorized": "Authorized",
     "onboarding.notAuthorized": "Not Authorized",
+    "onboarding.chooseLanguages": "Choose which programming languages you want to manage",
+    "onboarding.directoryAccess": "Directory Access",
+    "onboarding.languageHint": "You can always add or remove languages later in Settings",
+    "onboarding.directoryHint":
+        "Grant access to directories where your language versions are installed",
+    "onboarding.directoryList": "Recommended directories to authorize:",
+    "onboarding.accessNote": "Access is required for RuntimePilot to scan and manage your versions",
+    "onboarding.selected": "selected",
 
     // Settings
     "settings.title": "Settings",
@@ -166,6 +177,9 @@ private let englishStrings: [String: String] = [
     "settings.appearance": "Appearance",
     "settings.about": "About",
     "settings.scanPaths": "Scan Paths",
+    "settings.authorizedDirs": "Authorized Directories",
+    "settings.noDirs": "No directories authorized yet",
+    "settings.addDir": "Add Directory",
 
     // Scan Paths
     "scanPath.description":
@@ -182,6 +196,10 @@ private let englishStrings: [String: String] = [
     "scanPath.versionCount": "%d versions found",
     "scanPath.scanning": "Scanning...",
     "scanPath.summary": "%d paths, %d available",
+    "scanPath.noLanguages": "No languages configured",
+    "scanPath.addLanguageHint": "Add languages from the sidebar to configure scan paths",
+    "scanPath.configured": "Configured Paths",
+    "scanPath.noConfigured": "No paths configured",
 
     // Language Names
     "language.java": "Java JDK",
@@ -283,16 +301,26 @@ private let chineseStrings: [String: String] = [
     "shared.remove": "移除",
     "shared.done": "完成",
     "shared.close": "关闭",
+    "shared.skip": "跳过",
+    "shared.continue": "继续",
+    "shared.back": "返回",
 
     // Onboarding
     "onboarding.welcome": "欢迎使用 RuntimePilot",
-    "onboarding.grantAccess": "授权访问以扫描您的开发环境版本",
+    "onboarding.grantAccess": "授予访问权限",
     "onboarding.needsAccess": "RuntimePilot 需要访问以下目录来扫描版本：",
     "onboarding.skipForNow": "暂时跳过",
     "onboarding.continue": "继续",
     "onboarding.selectFolder": "选择文件夹",
     "onboarding.authorized": "已授权",
     "onboarding.notAuthorized": "未授权",
+    "onboarding.chooseLanguages": "选择您要管理的编程语言",
+    "onboarding.directoryAccess": "目录访问权限",
+    "onboarding.languageHint": "您可以随时在设置中添加或移除语言",
+    "onboarding.directoryHint": "授权访问安装了语言版本的目录",
+    "onboarding.directoryList": "推荐授权的目录：",
+    "onboarding.accessNote": "RuntimePilot 需要访问权限来扫描和管理您的版本",
+    "onboarding.selected": "已选择",
 
     // Settings
     "settings.title": "设置",
@@ -302,6 +330,9 @@ private let chineseStrings: [String: String] = [
     "settings.appearance": "外观",
     "settings.about": "关于",
     "settings.scanPaths": "扫描路径",
+    "settings.authorizedDirs": "已授权的目录",
+    "settings.noDirs": "尚未授权任何目录",
+    "settings.addDir": "添加目录",
 
     // Scan Paths
     "scanPath.description": "管理各语言的版本扫描路径。内置路径不可修改，但您可以添加自定义路径。",
@@ -317,6 +348,10 @@ private let chineseStrings: [String: String] = [
     "scanPath.versionCount": "找到 %d 个版本",
     "scanPath.scanning": "扫描中...",
     "scanPath.summary": "%d 个路径，%d 个可用",
+    "scanPath.noLanguages": "未配置任何语言",
+    "scanPath.addLanguageHint": "从侧边栏添加语言以配置扫描路径",
+    "scanPath.configured": "已配置的路径",
+    "scanPath.noConfigured": "未配置路径",
 
     // Language Names
     "language.java": "Java JDK",

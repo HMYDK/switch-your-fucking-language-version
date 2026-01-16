@@ -39,6 +39,28 @@ enum LocalizedKey: String {
     case dashboardGrantAccess = "dashboard.grantAccess"
     case dashboardManageAccess = "dashboard.manageAccess"
 
+    // Quick Start
+    case quickStartLabel = "quickStart.label"
+    case quickStartTime = "quickStart.time"
+    case quickStartStep1Title = "quickStart.step1.title"
+    case quickStartStep1Detail = "quickStart.step1.detail"
+    case quickStartStep2Title = "quickStart.step2.title"
+    case quickStartStep2Detail = "quickStart.step2.detail"
+    case quickStartStep3Title = "quickStart.step3.title"
+    case quickStartStep3Detail = "quickStart.step3.detail"
+
+    // Welcome Card
+    case welcomeHint = "welcome.hint"
+
+    // Environment Card
+    case envCardNotConfigured = "envCard.notConfigured"
+    case envCardNotInstalled = "envCard.notInstalled"
+    case envCardSource = "envCard.source"
+    case envCardInstalled = "envCard.installed"
+    case envCardActive = "envCard.active"
+    case envCardSelect = "envCard.select"
+    case envCardInstall = "envCard.install"
+
     // Generic Language View
     case languageNoVersionsFound = "language.noVersionsFound"
     case languageInstallHint = "language.installHint"

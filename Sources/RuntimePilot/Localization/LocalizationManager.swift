@@ -116,6 +116,28 @@ private let englishStrings: [String: String] = [
     "dashboard.grantAccess": "Grant directory access to scan for installed versions",
     "dashboard.manageAccess": "Manage Access",
 
+    // Quick Start
+    "quickStart.label": "Set up in 3 steps",
+    "quickStart.time": "~2 min",
+    "quickStart.step1.title": "Select a version",
+    "quickStart.step1.detail": "Click a language on the left, then press Use on the version you want to activate.",
+    "quickStart.step2.title": "Configure your shell",
+    "quickStart.step2.detail": "Add the snippet below to your shell config file (e.g. ~/.zshrc or ~/.bash_profile).",
+    "quickStart.step3.title": "Activate",
+    "quickStart.step3.detail": "Restart your terminal or run: source ~/.zshrc",
+
+    // Welcome Card
+    "welcome.hint": "Pick a language below, then select a version to get started.",
+
+    // Environment Card
+    "envCard.notConfigured": "Not configured",
+    "envCard.notInstalled": "Not installed",
+    "envCard.source": "Source",
+    "envCard.installed": "Installed",
+    "envCard.active": "Active",
+    "envCard.select": "Select",
+    "envCard.install": "Install",
+
     // Generic Language View
     "language.noVersionsFound": "No %@ Versions Found",
     "language.installHint":
@@ -290,6 +312,28 @@ private let chineseStrings: [String: String] = [
     "dashboard.noVersions": "未检测到版本",
     "dashboard.grantAccess": "授权目录访问以扫描已安装的版本",
     "dashboard.manageAccess": "管理权限",
+
+    // Quick Start
+    "quickStart.label": "3 步完成配置",
+    "quickStart.time": "约 2 分钟",
+    "quickStart.step1.title": "选择版本",
+    "quickStart.step1.detail": "点击左侧的语言，然后在想要激活的版本上点击「使用」按钮。",
+    "quickStart.step2.title": "配置 Shell",
+    "quickStart.step2.detail": "将下方代码片段添加到你的 Shell 配置文件（如 ~/.zshrc 或 ~/.bash_profile）。",
+    "quickStart.step3.title": "激活生效",
+    "quickStart.step3.detail": "重启终端，或运行命令：source ~/.zshrc",
+
+    // Welcome Card
+    "welcome.hint": "在下方选择一个语言，然后选择一个版本开始使用。",
+
+    // Environment Card
+    "envCard.notConfigured": "未配置",
+    "envCard.notInstalled": "未安装",
+    "envCard.source": "来源",
+    "envCard.installed": "已安装",
+    "envCard.active": "已激活",
+    "envCard.select": "选择",
+    "envCard.install": "安装",
 
     // Generic Language View
     "language.noVersionsFound": "未找到 %@ 版本",

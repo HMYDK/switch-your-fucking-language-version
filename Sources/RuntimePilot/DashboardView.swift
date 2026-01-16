@@ -142,7 +142,7 @@ struct DashboardView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(L(.dashboardWelcome))
                         .font(DMTypography.section)
-                    Text("Pick a language below, then select or install a version to get started.")
+                    Text(L(.welcomeHint))
                         .font(DMTypography.callout)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -162,16 +162,16 @@ struct DashboardView: View {
                         number: 1,
                         symbol: "hand.tap.fill",
                         accent: .blue,
-                        title: "Select a version",
-                        detail: "Open a language on the left and press Use on the version you want."
+                        title: L(.quickStartStep1Title),
+                        detail: L(.quickStartStep1Detail)
                     )
 
                     QuickStartStep(
                         number: 2,
                         symbol: "terminal.fill",
                         accent: .purple,
-                        title: "Configure your shell",
-                        detail: "Add the snippet below to your shell config file (e.g. ~/.zshrc)."
+                        title: L(.quickStartStep2Title),
+                        detail: L(.quickStartStep2Detail)
                     ) {
                         DMCodeBlock(
                             text: shellConfig,
@@ -186,8 +186,8 @@ struct DashboardView: View {
                         number: 3,
                         symbol: "bolt.fill",
                         accent: .orange,
-                        title: "Activate",
-                        detail: "Restart your terminal or run source ~/.zshrc."
+                        title: L(.quickStartStep3Title),
+                        detail: L(.quickStartStep3Detail)
                     )
                 }
                 .padding(.top, DMSpace.m)
@@ -196,10 +196,10 @@ struct DashboardView: View {
                     Image(systemName: "wand.and.stars")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(.secondary)
-                    Text("Set up in 3 steps")
+                    Text(L(.quickStartLabel))
                         .font(DMTypography.section)
                     Spacer()
-                    DMBadge(text: "~2 min", accent: .secondary, style: .outlined)
+                    DMBadge(text: L(.quickStartTime), accent: .secondary, style: .outlined)
                 }
             }
             .tint(.primary)
@@ -331,9 +331,12 @@ private struct EnvironmentCard: View {
                                 .font(DMTypography.monospaceSm)
                                 .foregroundStyle(.secondary)
                         } else {
-                            Text(status.installedCount > 0 ? "Not configured" : "Not installed")
-                                .font(DMTypography.caption)
-                                .foregroundStyle(.tertiary)
+                            Text(
+                                status.installedCount > 0
+                                    ? L(.envCardNotConfigured) : L(.envCardNotInstalled)
+                            )
+                            .font(DMTypography.caption)
+                            .foregroundStyle(.tertiary)
                         }
                     }
 
@@ -350,13 +353,13 @@ private struct EnvironmentCard: View {
                 // Details
                 HStack(spacing: DMSpace.xl) {
                     DetailItem(
-                        label: "Source",
+                        label: L(.envCardSource),
                         value: status.activeSource ?? "—",
                         isHighlighted: status.activeSource?.contains("Homebrew") ?? false
                     )
 
                     DetailItem(
-                        label: "Installed",
+                        label: L(.envCardInstalled),
                         value: "\(status.installedCount)",
                         isHighlighted: false
                     )
@@ -392,11 +395,11 @@ private struct EnvironmentCard: View {
     @ViewBuilder
     private var statusBadge: some View {
         if status.isConfigured {
-            DMBadge(text: "Active", accent: status.color, style: .filled)
+            DMBadge(text: L(.envCardActive), accent: status.color, style: .filled)
         } else if status.installedCount > 0 {
-            DMBadge(text: "Select", accent: .orange, style: .subtle)
+            DMBadge(text: L(.envCardSelect), accent: .orange, style: .subtle)
         } else {
-            DMBadge(text: "Install", accent: .secondary, style: .outlined)
+            DMBadge(text: L(.envCardInstall), accent: .secondary, style: .outlined)
         }
     }
 }

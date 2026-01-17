@@ -156,53 +156,67 @@ struct DashboardView: View {
     // MARK: - Quick Start Card
     private var quickStartCard: some View {
         DMCard(isInteractive: false) {
-            DisclosureGroup(isExpanded: $isQuickStartExpanded) {
-                VStack(alignment: .leading, spacing: DMSpace.l) {
-                    QuickStartStep(
-                        number: 1,
-                        symbol: "hand.tap.fill",
-                        accent: .blue,
-                        title: L(.quickStartStep1Title),
-                        detail: L(.quickStartStep1Detail)
-                    )
+            VStack(alignment: .leading, spacing: 0) {
+                // 可点击的标题行
+                Button {
+                    withAnimation(DMAnimation.smooth) {
+                        isQuickStartExpanded.toggle()
+                    }
+                } label: {
+                    HStack(spacing: DMSpace.s) {
+                        Image(systemName: isQuickStartExpanded ? "chevron.down" : "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 16)
+                        Image(systemName: "wand.and.stars")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                        Text(L(.quickStartLabel))
+                            .font(DMTypography.section)
+                        Spacer()
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
 
-                    QuickStartStep(
-                        number: 2,
-                        symbol: "terminal.fill",
-                        accent: .purple,
-                        title: L(.quickStartStep2Title),
-                        detail: L(.quickStartStep2Detail)
-                    ) {
-                        DMCodeBlock(
-                            text: shellConfig,
-                            onCopy: {
-                                NSPasteboard.general.clearContents()
-                                NSPasteboard.general.setString(shellConfig, forType: .string)
-                            }
+                // 展开内容
+                if isQuickStartExpanded {
+                    VStack(alignment: .leading, spacing: DMSpace.l) {
+                        QuickStartStep(
+                            number: 1,
+                            symbol: "hand.tap.fill",
+                            accent: .blue,
+                            title: L(.quickStartStep1Title),
+                            detail: L(.quickStartStep1Detail)
+                        )
+
+                        QuickStartStep(
+                            number: 2,
+                            symbol: "terminal.fill",
+                            accent: .purple,
+                            title: L(.quickStartStep2Title),
+                            detail: L(.quickStartStep2Detail)
+                        ) {
+                            DMCodeBlock(
+                                text: shellConfig,
+                                onCopy: {
+                                    NSPasteboard.general.clearContents()
+                                    NSPasteboard.general.setString(shellConfig, forType: .string)
+                                }
+                            )
+                        }
+
+                        QuickStartStep(
+                            number: 3,
+                            symbol: "bolt.fill",
+                            accent: .orange,
+                            title: L(.quickStartStep3Title),
+                            detail: L(.quickStartStep3Detail)
                         )
                     }
-
-                    QuickStartStep(
-                        number: 3,
-                        symbol: "bolt.fill",
-                        accent: .orange,
-                        title: L(.quickStartStep3Title),
-                        detail: L(.quickStartStep3Detail)
-                    )
-                }
-                .padding(.top, DMSpace.m)
-            } label: {
-                HStack(spacing: DMSpace.s) {
-                    Image(systemName: "wand.and.stars")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                    Text(L(.quickStartLabel))
-                        .font(DMTypography.section)
-                    Spacer()
-                    DMBadge(text: L(.quickStartTime), accent: .secondary, style: .outlined)
+                    .padding(.top, DMSpace.m)
                 }
             }
-            .tint(.primary)
         }
     }
 

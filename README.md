@@ -1,4 +1,4 @@
-# RuntimePilot
+# Switch Your Fucking Language Version
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-macOS%2013.0+-blue" alt="Platform">
@@ -6,8 +6,12 @@
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
 </p>
 
-**RuntimePilot** 是一个原生 macOS 应用，为任意编程语言提供统一的运行时版本管理界面。  
+> 🤬 Tired of juggling multiple language versions? Just switch your fucking language version!
+
+**SYFLV** (aka RuntimePilot) 是一个原生 macOS 应用，为任意编程语言提供统一的运行时版本管理界面。  
 通过单一 UI 发现已安装的运行时，快速切换版本，并将选定的版本配置到你的 Shell 环境中。
+
+再也不用记那些该死的 `nvm use`、`pyenv global`、`jenv local` 了！
 
 ## ✨ 特性
 

@@ -120,9 +120,11 @@ private let englishStrings: [String: String] = [
     "quickStart.label": "Set up in 3 steps",
     "quickStart.time": "~2 min",
     "quickStart.step1.title": "Select a version",
-    "quickStart.step1.detail": "Click a language on the left, then press Use on the version you want to activate.",
+    "quickStart.step1.detail":
+        "Click a language on the left, then press Use on the version you want to activate.",
     "quickStart.step2.title": "Configure your shell",
-    "quickStart.step2.detail": "Add the snippet below to your shell config file (e.g. ~/.zshrc or ~/.bash_profile).",
+    "quickStart.step2.detail":
+        "Add the snippet below to your shell config file (e.g. ~/.zshrc or ~/.bash_profile).",
     "quickStart.step3.title": "Activate",
     "quickStart.step3.detail": "Restart your terminal or run: source ~/.zshrc",
 
@@ -253,26 +255,6 @@ private let englishStrings: [String: String] = [
     "menu.refreshAll": "Refresh All",
     "menu.manageDirectoryAccess": "Manage Directory Access...",
     "menu.about": "About RuntimePilot",
-
-    // Uninstall Guide
-    "uninstall.title": "Uninstall %@",
-    "uninstall.subtitle":
-        "This version was installed via %@. Run the following command in Terminal to uninstall:",
-    "uninstall.homebrewHint":
-        "This will remove the package and its dependencies if no longer needed.",
-    "uninstall.nvmHint": "This will remove the Node.js version from NVM.",
-    "uninstall.pyenvHint": "This will remove the Python version from pyenv.",
-    "uninstall.gvmHint": "This will remove the Go version from GVM.",
-    "uninstall.asdfHint": "This will remove the version from asdf.",
-    "uninstall.rbenvHint": "This will remove the Ruby version from rbenv.",
-    "uninstall.rvmHint": "This will remove the Ruby version from RVM.",
-    "uninstall.rustupHint": "This will remove the Rust toolchain from rustup.",
-    "uninstall.manualHint":
-        "This version needs to be uninstalled manually. You can delete the directory in Finder.",
-    "uninstall.copyCommand": "Copy Command",
-    "uninstall.openTerminal": "Open Terminal",
-    "uninstall.refreshAfter": "After uninstalling, click Refresh to update the version list.",
-    "uninstall.uninstall": "Uninstall",
 ]
 
 // MARK: - Chinese Strings
@@ -447,21 +429,4 @@ private let chineseStrings: [String: String] = [
     "menu.refreshAll": "刷新全部",
     "menu.manageDirectoryAccess": "管理目录访问权限...",
     "menu.about": "关于 RuntimePilot",
-
-    // Uninstall Guide
-    "uninstall.title": "卸载 %@",
-    "uninstall.subtitle": "此版本通过 %@ 安装。请在终端中运行以下命令来卸载：",
-    "uninstall.homebrewHint": "这将移除该软件包及其不再需要的依赖项。",
-    "uninstall.nvmHint": "这将从 NVM 中移除该 Node.js 版本。",
-    "uninstall.pyenvHint": "这将从 pyenv 中移除该 Python 版本。",
-    "uninstall.gvmHint": "这将从 GVM 中移除该 Go 版本。",
-    "uninstall.asdfHint": "这将从 asdf 中移除该版本。",
-    "uninstall.rbenvHint": "这将从 rbenv 中移除该 Ruby 版本。",
-    "uninstall.rvmHint": "这将从 RVM 中移除该 Ruby 版本。",
-    "uninstall.rustupHint": "这将从 rustup 中移除该 Rust 工具链。",
-    "uninstall.manualHint": "此版本需要手动卸载。您可以在 Finder 中删除该目录。",
-    "uninstall.copyCommand": "复制命令",
-    "uninstall.openTerminal": "打开终端",
-    "uninstall.refreshAfter": "卸载完成后，点击刷新以更新版本列表。",
-    "uninstall.uninstall": "卸载",
 ]

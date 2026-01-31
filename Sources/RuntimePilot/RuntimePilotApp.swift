@@ -22,9 +22,6 @@ struct RuntimePilotApp: App {
     @State private var showOnboarding = false
 
     init() {
-        // 执行数据迁移（从旧版本内置语言迁移到新版本自定义语言）
-        MigrationManager.shared.migrateIfNeeded()
-        
         // 创建 registry 并立即注册所有语言（在 ContentView 创建之前）
         let registry = LanguageRegistry()
         CustomLanguageManager.shared.registerToRegistry(registry)
@@ -35,11 +32,8 @@ struct RuntimePilotApp: App {
         WindowGroup {
             ContentView(registry: registry)
                 .onAppear {
-
-                    // 检查是否需要显示语言选择引导
-                    if MigrationManager.shared.needsOnboarding {
-                        showOnboarding = true
-                    } else if directoryAccessManager.needsOnboarding {
+                    // 检查是否需要显示引导
+                    if directoryAccessManager.needsOnboarding {
                         showOnboarding = true
                     }
                 }

@@ -50,12 +50,12 @@
 ### 🔄 一致的交互体验
 - 侧边栏选择语言，卡片列表展示所有已检测版本
 - 当前激活版本固定在顶部并标记为 **Active**
-- 每个版本卡片提供 **Use**、**Open in Finder**、**Uninstall** 等操作
+- 每个版本卡片提供 **Use**、**Open in Finder** 等操作
 - 支持复制路径、在 Finder 中显示等上下文操作
 
 ### 🐚 Shell 集成
 - RuntimePilot **不直接修改**你的 Shell 配置文件
-- 为每种语言生成小型 `*_env.sh` 脚本，存放于 `~/.config/devmanager/`
+- 为每种语言生成小型 `*_env.sh` 脚本，存放于 `~/.config/runtimepilot/`
 - 只需在 Shell 配置中 source 这些文件一次，应用切换版本时会自动更新它们
 
 ### ⚙️ 设置
@@ -66,7 +66,6 @@
 
 - macOS 13.0 或更高版本
 - Swift 5.9+
-- Homebrew（可选，安装/卸载功能需要）
 
 ## 🚀 如何运行
 
@@ -97,7 +96,7 @@ swift run
 
 ```bash
 # RuntimePilot - Development Environment Manager
-for env_file in ~/.config/devmanager/*_env.sh; do
+for env_file in ~/.config/runtimepilot/*_env.sh; do
     [ -f "$env_file" ] && source "$env_file"
 done
 ```
@@ -106,16 +105,16 @@ done
 
 ```bash
 # Java
-[ -f ~/.config/devmanager/java_env.sh ] && source ~/.config/devmanager/java_env.sh
+[ -f ~/.config/runtimepilot/java_env.sh ] && source ~/.config/runtimepilot/java_env.sh
 
 # Node.js
-[ -f ~/.config/devmanager/node_env.sh ] && source ~/.config/devmanager/node_env.sh
+[ -f ~/.config/runtimepilot/node_env.sh ] && source ~/.config/runtimepilot/node_env.sh
 
 # Python
-[ -f ~/.config/devmanager/python_env.sh ] && source ~/.config/devmanager/python_env.sh
+[ -f ~/.config/runtimepilot/python_env.sh ] && source ~/.config/runtimepilot/python_env.sh
 
 # Go
-[ -f ~/.config/devmanager/go_env.sh ] && source ~/.config/devmanager/go_env.sh
+[ -f ~/.config/runtimepilot/go_env.sh ] && source ~/.config/runtimepilot/go_env.sh
 ```
 
 然后重新加载 Shell：
@@ -160,12 +159,10 @@ RuntimePilot/
 │   │   ├── LocalizationManager.swift   # 本地化管理器
 │   │   └── LocalizedStrings.swift      # 本地化字符串定义
 │   │
-│   ├── BrewService.swift           # Homebrew 服务
 │   ├── BrewScanner.swift           # Homebrew 版本扫描
 │   ├── VersionSorting.swift        # 版本号排序工具
 │   │
 │   ├── DirectoryAccessManager.swift# 目录访问权限管理
-│   ├── MigrationManager.swift      # 数据迁移管理器
 │   │
 │   ├── DMTheme.swift               # Design System（间距、圆角、排版）
 │   ├── SharedViews.swift           # 共享 UI 组件

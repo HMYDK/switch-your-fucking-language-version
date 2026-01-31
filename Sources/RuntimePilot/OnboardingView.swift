@@ -276,7 +276,6 @@ struct OnboardingView: View {
 
     private func completeOnboarding() {
         accessManager.completeOnboarding()
-        MigrationManager.shared.markOnboardingCompleted()
         isPresented = false
     }
 }

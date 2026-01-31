@@ -173,23 +173,6 @@ enum LocalizedKey: String {
     case menuRefreshAll = "menu.refreshAll"
     case menuManageDirectoryAccess = "menu.manageDirectoryAccess"
     case menuAbout = "menu.about"
-
-    // Uninstall Guide
-    case uninstallGuideTitle = "uninstall.title"
-    case uninstallGuideSubtitle = "uninstall.subtitle"
-    case uninstallGuideHomebrewHint = "uninstall.homebrewHint"
-    case uninstallGuideNvmHint = "uninstall.nvmHint"
-    case uninstallGuidePyenvHint = "uninstall.pyenvHint"
-    case uninstallGuideGvmHint = "uninstall.gvmHint"
-    case uninstallGuideAsdfHint = "uninstall.asdfHint"
-    case uninstallGuideRbenvHint = "uninstall.rbenvHint"
-    case uninstallGuideRvmHint = "uninstall.rvmHint"
-    case uninstallGuideRustupHint = "uninstall.rustupHint"
-    case uninstallGuideManualHint = "uninstall.manualHint"
-    case uninstallGuideCopyCommand = "uninstall.copyCommand"
-    case uninstallGuideOpenTerminal = "uninstall.openTerminal"
-    case uninstallGuideRefreshAfter = "uninstall.refreshAfter"
-    case uninstallGuideUninstall = "uninstall.uninstall"
 }
 
 // MARK: - Convenience Extensions

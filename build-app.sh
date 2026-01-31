@@ -38,7 +38,7 @@ else
     echo "⚠️  rsvg-convert not found, using placeholder icon"
     # 创建简单的占位图标
     for size in 16 32 128 256 512; do
-        sips -z $size $size Sources/DevManager/Resources/java.png --out "$ICONSET_DIR/icon_${size}x${size}.png" 2>/dev/null || true
+        sips -z $size $size Sources/RuntimePilot/Resources/java.png --out "$ICONSET_DIR/icon_${size}x${size}.png" 2>/dev/null || true
     done
 fi
 
@@ -67,7 +67,7 @@ if [ -f "$BUILD_DIR/AppIcon.icns" ]; then
 fi
 
 # 复制资源文件
-cp Sources/DevManager/Resources/*.png "$RESOURCES_DIR/" 2>/dev/null || true
+cp Sources/RuntimePilot/Resources/*.png "$RESOURCES_DIR/" 2>/dev/null || true
 
 echo "✅ App bundle created: $APP_BUNDLE"
 

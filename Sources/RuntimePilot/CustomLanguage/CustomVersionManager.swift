@@ -327,7 +327,7 @@ final class CustomVersionManager: ObservableObject, LanguageManager {
 
         let configDir = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".config")
-            .appendingPathComponent("devmanager")
+            .appendingPathComponent("runtimepilot")
 
         // 创建目录
         try? FileManager.default.createDirectory(at: configDir, withIntermediateDirectories: true)

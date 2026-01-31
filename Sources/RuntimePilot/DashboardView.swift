@@ -235,7 +235,7 @@ struct DashboardView: View {
 
     private let shellConfig = """
         # RuntimePilot - Development Environment Manager
-        for env_file in ~/.config/devmanager/*_env.sh; do
+        for env_file in ~/.config/runtimepilot/*_env.sh; do
             [ -f "$env_file" ] && source "$env_file"
         done
         """

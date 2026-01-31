@@ -26,11 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release
 - Support for Java, Node.js, Python, and Go runtime management
 - Dashboard with environment overview
-- Version installation via Homebrew
-- Version uninstallation with safety protection (active version cannot be deleted)
-- Real-time download progress display
-- System notifications for installation completion
-- Shell integration via `~/.config/devmanager/*_env.sh`
+- Version scanning and switching
+- Shell integration via `~/.config/runtimepilot/*_env.sh`
 - Quick Start guide in Dashboard
 
 ### Technical

@@ -20,4 +20,5 @@ DerivedData/
 # Trae / tooling metadata
 .trae/
 .qoder/
+.claude/
 

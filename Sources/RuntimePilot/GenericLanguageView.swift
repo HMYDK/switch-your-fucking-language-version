@@ -6,6 +6,9 @@ struct GenericLanguageView: View {
     @ObservedObject var manager: AnyLanguageManager
     @ObservedObject private var localization = LocalizationManager.shared
 
+    @State private var showSwitchAlert = false
+    @State private var lastSwitchedVersion: AnyLanguageVersion?
+
     private var displayedVersions: [AnyLanguageVersion] {
         var sorted = manager.installedVersions.sorted { lhs, rhs in
             compareVersionDescending(lhs.version, rhs.version)
@@ -57,6 +60,16 @@ struct GenericLanguageView: View {
                 .accessibilityLabel(L(.languageRefresh))
             }
         }
+        .alert(L(.versionSwitchTitle), isPresented: $showSwitchAlert) {
+            Button(L(.versionSwitchOpenTerminal)) {
+                openTerminal()
+            }
+            Button(L(.versionSwitchDismiss), role: .cancel) { }
+        } message: {
+            if let version = lastSwitchedVersion {
+                Text(L(.versionSwitchMessage, metadata.displayName, version.version))
+            }
+        }
     }
 
     private var versionsTable: some View {
@@ -76,6 +89,8 @@ struct GenericLanguageView: View {
                         onUse: {
                             withAnimation(.easeInOut(duration: 0.25)) {
                                 manager.setActive(version)
+                                lastSwitchedVersion = version
+                                showSwitchAlert = true
                             }
                         },
                         onOpenFinder: {
@@ -151,5 +166,13 @@ struct GenericLanguageView: View {
         }
         .padding(.horizontal, DMSpace.xxl)
         .padding(.vertical, DMSpace.xl)
+    }
+
+    private func openTerminal() {
+        // Use Process to launch Terminal via 'open' command
+        let task = Process()
+        task.launchPath = "/usr/bin/open"
+        task.arguments = ["-b", "com.apple.Terminal"]
+        try? task.run()
     }
 }

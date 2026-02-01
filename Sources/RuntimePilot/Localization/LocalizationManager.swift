@@ -255,6 +255,12 @@ private let englishStrings: [String: String] = [
     "menu.refreshAll": "Refresh All",
     "menu.manageDirectoryAccess": "Manage Directory Access...",
     "menu.about": "About RuntimePilot",
+
+    // Version Switch Toast
+    "versionSwitch.title": "Version Switched",
+    "versionSwitch.message": "%@ %@ is now active. Environment variables have been updated. Open a new terminal to use the new version.",
+    "versionSwitch.openTerminal": "Open Terminal",
+    "versionSwitch.dismiss": "Dismiss",
 ]
 
 // MARK: - Chinese Strings
@@ -429,4 +435,10 @@ private let chineseStrings: [String: String] = [
     "menu.refreshAll": "刷新全部",
     "menu.manageDirectoryAccess": "管理目录访问权限...",
     "menu.about": "关于 RuntimePilot",
+
+    // Version Switch Toast
+    "versionSwitch.title": "版本已切换",
+    "versionSwitch.message": "%@ %@ 已激活。环境变量已更新，需要打开新终端才能使用新版本。",
+    "versionSwitch.openTerminal": "打开终端",
+    "versionSwitch.dismiss": "知道了",
 ]

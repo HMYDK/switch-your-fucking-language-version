@@ -95,6 +95,12 @@ enum LocalizedKey: String {
     case sharedContinue = "shared.continue"
     case sharedBack = "shared.back"
 
+    // Version Switch Toast
+    case versionSwitchTitle = "versionSwitch.title"
+    case versionSwitchMessage = "versionSwitch.message"
+    case versionSwitchOpenTerminal = "versionSwitch.openTerminal"
+    case versionSwitchDismiss = "versionSwitch.dismiss"
+
     // Onboarding
     case onboardingWelcome = "onboarding.welcome"
     case onboardingGrantAccess = "onboarding.grantAccess"

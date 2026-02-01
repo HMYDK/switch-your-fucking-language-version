@@ -234,8 +234,8 @@ struct DashboardView: View {
     }
 
     private let shellConfig = """
-        # RuntimePilot - Development Environment Manager
-        for env_file in ~/.config/runtimepilot/*_env.sh; do
+        # SYFLV - Switch Your Fucking Language Version
+        for env_file in ~/.config/switchyourfuckinglanguageversion/*_env.sh; do
             [ -f "$env_file" ] && source "$env_file"
         done
         """

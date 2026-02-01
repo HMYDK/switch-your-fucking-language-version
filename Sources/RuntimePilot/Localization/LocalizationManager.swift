@@ -82,7 +82,7 @@ final class LocalizationManager: ObservableObject {
 
 private let englishStrings: [String: String] = [
     // App
-    "app.name": "RuntimePilot",
+    "app.name": "SYFLV",
     "app.tagline": "Dev Environment Manager",
 
     // Navigation
@@ -267,7 +267,7 @@ private let englishStrings: [String: String] = [
 
 private let chineseStrings: [String: String] = [
     // App
-    "app.name": "RuntimePilot",
+    "app.name": "SYFLV",
     "app.tagline": "开发环境管理器",
 
     // Navigation

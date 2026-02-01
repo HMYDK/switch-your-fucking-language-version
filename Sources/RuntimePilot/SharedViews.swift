@@ -249,7 +249,7 @@ struct ConfigHintView: View {
             }
 
             HStack(spacing: DMSpace.s) {
-                Text("source ~/.config/runtimepilot/\(filename)")
+                Text("source ~/.config/switchyourfuckinglanguageversion/\(filename)")
                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .foregroundColor(.primary)
                     .padding(.horizontal, DMSpace.m)
@@ -269,7 +269,7 @@ struct ConfigHintView: View {
                     let pasteboard = NSPasteboard.general
                     pasteboard.clearContents()
                     pasteboard.setString(
-                        "source ~/.config/runtimepilot/\(filename)", forType: .string)
+                        "source ~/.config/switchyourfuckinglanguageversion/\(filename)", forType: .string)
                     withAnimation(DMAnimation.quick) {
                         showCopied = true
                     }

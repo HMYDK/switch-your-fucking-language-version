@@ -128,6 +128,77 @@ swift run
 - App 包：`.build/release/RuntimePilot.app`
 - DMG 镜像：`RuntimePilot-1.0.1.dmg`
 
+### 首次启动：提示“无法验证开发者”
+
+从 GitHub Release 下载后，如果 macOS 提示：
+
+> “RuntimePilot”无法打开，因为无法验证开发者。
+
+或者：
+
+> “RuntimePilot”已损坏，无法打开。
+
+这不是文件损坏。当前发布包使用 **ad-hoc 签名**（没有 Apple Developer 证书），所以 Gatekeeper 会在首次启动时拦截。
+
+**方法一：系统设置（图形界面）**
+
+1. 先双击一次 App，让提示出现；
+2. 打开 **系统设置 → 隐私与安全性**；
+3. 在“安全性”区域找到 `RuntimePilot`，点击 **仍要打开**；
+4. 输入管理员密码后再次确认。
+
+> 如果没有看到“仍要打开”，或者提示是“已损坏”，请使用方法二。
+
+**方法二：终端清除隔离属性（推荐，适用于 v1.0.1+）**
+
+App 已安装到 `/Applications`：
+
+```bash
+sudo xattr -dr com.apple.quarantine /Applications/RuntimePilot.app
+open /Applications/RuntimePilot.app
+```
+
+App 还在下载目录：
+
+```bash
+xattr -dr com.apple.quarantine ~/Downloads/RuntimePilot.app
+open ~/Downloads/RuntimePilot.app
+```
+
+如果还没从 DMG 里拖出来：
+
+```bash
+xattr -dr com.apple.quarantine ~/Downloads/RuntimePilot-1.0.1.dmg
+open ~/Downloads/RuntimePilot-1.0.1.dmg
+```
+
+然后把 `RuntimePilot.app` 拖到 `/Applications`，再执行第一条命令。
+
+**检查是否生效**
+
+```bash
+xattr -p com.apple.quarantine /Applications/RuntimePilot.app
+codesign --verify --deep --strict --verbose=2 /Applications/RuntimePilot.app
+```
+
+第一条应提示 `No such xattr`，第二条应显示 `valid on disk`。
+
+**如果仍提示“已损坏”**
+
+确认下载的是 **v1.0.1**；然后在本地重新做一次 ad-hoc 签名：
+
+```bash
+sudo codesign --force --deep --sign - /Applications/RuntimePilot.app
+sudo xattr -dr com.apple.quarantine /Applications/RuntimePilot.app
+open /Applications/RuntimePilot.app
+```
+
+**注意**
+
+- 只对你信任的构建执行上述操作；不要对来源不明的 App 清除隔离属性。
+- 不要使用 `sudo spctl --master-disable` 全局关闭 Gatekeeper。
+- 不注册 Apple Developer 无法做到“双击完全无提示”；ad-hoc 签名可以消除签名不匹配导致的“已损坏”，但 macOS 仍会要求一次确认。
+
 ### 自动化测试
 
 ```bash
@@ -143,15 +214,7 @@ swift run RuntimePilotChecks
 ### 发布与签名
 
 `build-app.sh` 在未设置 `CODESIGN_IDENTITY` 时会对 App 做 **ad-hoc 签名**，不需要 Apple Developer 账号；
-但浏览器下载的 App 仍会被 Gatekeeper 拦截一次。没有 Developer ID 时，可以：
-
-- 在弹窗中尝试「打开」，或到 **系统设置 → 隐私与安全性 → 仍要打开**；
-- 或者清除隔离属性：
-
-```bash
-sudo xattr -dr com.apple.quarantine /Applications/RuntimePilot.app
-open /Applications/RuntimePilot.app
-```
+首次启动的 Gatekeeper 处理步骤见上方的「首次启动：提示“无法验证开发者”」。
 
 如果有 Developer ID，可做正式签名/公证，用户即可双击打开：
 

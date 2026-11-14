@@ -371,7 +371,7 @@ struct DMKeyValueRow: View {
                 }
                 .buttonStyle(.plain)
                 .opacity(isHovered || justCopied ? 1 : 0)
-                .help("Copy")
+                .help(L(.sharedCopy))
             }
         }
         .padding(.vertical, DMSpace.xxs)
@@ -438,7 +438,7 @@ struct DMCodeBlock: View {
                 .onHover { hovering in
                     isHovered = hovering
                 }
-                .help("Copy")
+                .help(L(.sharedCopy))
             }
         }
         .background(

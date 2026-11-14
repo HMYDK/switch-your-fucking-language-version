@@ -28,11 +28,14 @@ final class CustomVersionManager: ObservableObject, LanguageManager {
     @Published private(set) var activeVersion: CustomVersion?
 
     private var config: CustomLanguageConfig
-    private let activeVersionKey: String
+
+    /// identifier 可以在配置更新时变化，因此每次从当前 config 计算 key
+    private var activeVersionKey: String {
+        "ActiveVersion_\(config.identifier)"
+    }
 
     init(config: CustomLanguageConfig) {
         self.config = config
-        self.activeVersionKey = "ActiveVersion_\(config.identifier)"
         refresh()
     }
 
@@ -44,51 +47,91 @@ final class CustomVersionManager: ObservableObject, LanguageManager {
 
     /// 刷新版本列表
     func refresh() {
+        // 在主线程捕获扫描路径，避免后台扫描期间用户编辑配置造成数据竞争
+        let scanPaths = config.expandedScanPaths
+
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
 
-            let versions = self.scanVersions()
-            let savedActiveVersion = UserDefaults.standard.string(forKey: self.activeVersionKey)
+            let versions = self.scanVersions(in: scanPaths)
 
             DispatchQueue.main.async {
                 self.installedVersions = versions.sorted {
                     compareVersionDescending($0.version, $1.version)
                 }
 
-                // 恢复激活的版本
-                if let savedPath = savedActiveVersion,
-                    let active = versions.first(where: { $0.path == savedPath })
+                // 只恢复用户真正选择过且仍然存在的版本。
+                // 不能在首次扫描时把第一个版本伪装成“已激活”：那样既没有生成
+                // 环境脚本，也没有持久化，用户会误以为版本已经切换成功。
+                let savedPath = UserDefaults.standard.string(forKey: self.activeVersionKey)
+                if let savedPath = savedPath,
+                    let active = versions.first(where: { $0.path == savedPath }),
+                    self.generateEnvScript(for: active)
                 {
+                    // 重新生成一次脚本：配置里的 envVarName / pathSuffix 可能刚被编辑过，
+                    // 而且这样能保证“Active”状态和环境脚本始终一致。
                     self.activeVersion = active
-                } else if let first = self.installedVersions.first {
-                    // 默认使用第一个版本
-                    self.activeVersion = first
+                } else {
+                    self.activeVersion = nil
                 }
             }
         }
     }
 
-    /// 设置激活版本
-    func setActive(_ version: CustomVersion) {
+    /// 设置激活版本并写入环境脚本。
+    /// - Returns: false 表示环境变量非法或脚本写入失败，调用方必须把失败反馈给用户。
+    @discardableResult
+    func setActive(_ version: CustomVersion) -> Bool {
+        // 先验证环境变量，避免把一个语法错误的 export 写进用户 shell
+        if let rawName = config.envVarName {
+            let envVarName = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !envVarName.isEmpty {
+                guard CustomLanguageConfig.isValidEnvironmentVariableName(envVarName),
+                    !CustomLanguageConfig.isReservedEnvironmentVariable(envVarName)
+                else {
+                    print("Refusing to write env script with invalid variable name: \(envVarName)")
+                    return false
+                }
+            }
+        }
+
+        guard generateEnvScript(for: version) else {
+            return false
+        }
+
         activeVersion = version
         UserDefaults.standard.set(version.path, forKey: activeVersionKey)
-
-        // 生成环境配置脚本
-        generateEnvScript(for: version)
+        return true
     }
 
     // MARK: - Version Scanning
 
     /// 扫描所有配置路径中的版本
-    private func scanVersions() -> [CustomVersion] {
+    private func scanVersions(in scanPaths: [String]) -> [CustomVersion] {
+        return DirectoryAccessManager.shared.withBestAccess(to: scanPaths) {
         var versions: [CustomVersion] = []
         var seenPaths = Set<String>()
 
-        for scanPath in config.expandedScanPaths {
+        for scanPath in scanPaths {
             // 处理通配符路径（如 /opt/homebrew/Cellar/node*）
             let expandedPaths = expandWildcardPath(scanPath)
 
             for path in expandedPaths {
+                // Flutter 的安装目录本身就是 SDK 根目录，不是“版本目录的集合”。
+                // 如果直接 scanDirectory，会把 bin/dev/examples/packages 当成版本。
+                if let flutterVersion = flutterSDKVersion(at: path) {
+                    if !seenPaths.contains(path) {
+                        seenPaths.insert(path)
+                        versions.append(
+                            CustomVersion(
+                                version: flutterVersion,
+                                source: detectSource(for: path),
+                                path: path
+                            ))
+                    }
+                    continue
+                }
+
                 let scannedVersions = scanDirectory(at: path)
                 for version in scannedVersions {
                     // 避免重复
@@ -101,6 +144,35 @@ final class CustomVersionManager: ObservableObject, LanguageManager {
         }
 
         return versions
+        }
+    }
+
+    /// 如果目录本身是一个 Flutter SDK，返回其版本号；否则返回 nil。
+    private func flutterSDKVersion(at path: String) -> String? {
+        let fileManager = FileManager.default
+        let flutterBinary = (path as NSString).appendingPathComponent("bin/flutter")
+        guard fileManager.fileExists(atPath: flutterBinary) else {
+            return nil
+        }
+
+        // Flutter SDK 根目录下通常有一个 version 文件
+        let versionPath = (path as NSString).appendingPathComponent("version")
+        if let data = fileManager.contents(atPath: versionPath),
+            let text = String(data: data, encoding: .utf8)
+        {
+            let version = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !version.isEmpty {
+                return version
+            }
+        }
+        return "SDK"
+    }
+
+    /// 判断目录是否是 rustup toolchain 目录（这类目录名需要原样保留）
+    private func isRustToolchainDirectory(_ path: String) -> Bool {
+        let normalized = path.lowercased().replacingOccurrences(of: "\\", with: "/")
+        return normalized.contains("/.rustup/toolchains")
+            || normalized.hasSuffix(".rustup/toolchains")
     }
 
     /// 展开通配符路径
@@ -132,9 +204,15 @@ final class CustomVersionManager: ObservableObject, LanguageManager {
             return [path]
         }
 
-        // 获取通配符模式
+        // 获取通配符模式，并转义正则特殊字符
         let pattern = components[wildcardIndex]
-        let regexPattern = "^" + pattern.replacingOccurrences(of: "*", with: ".*") + "$"
+        let escapedPattern = pattern
+            .split(separator: "*", omittingEmptySubsequences: false)
+            .map { NSRegularExpression.escapedPattern(for: String($0)) }
+            .joined(separator: ".*")
+        let regexPattern = "^" + escapedPattern + "$"
+        let regex = try? NSRegularExpression(pattern: regexPattern, options: [])
+        let isCellarPath = BrewScanner.cellarRoots.contains(basePath)
 
         // 扫描基础目录
         do {
@@ -143,22 +221,37 @@ final class CustomVersionManager: ObservableObject, LanguageManager {
             for item in contents {
                 if item.hasPrefix(".") { continue }
 
-                // 检查是否匹配通配符模式
-                if let regex = try? NSRegularExpression(pattern: regexPattern, options: []),
-                    regex.firstMatch(in: item, range: NSRange(item.startIndex..., in: item)) != nil
-                {
-                    let matchedPath = (basePath as NSString).appendingPathComponent(item)
-
-                    // 如果通配符后还有更多路径组件，递归处理
-                    if wildcardIndex + 1 < components.count {
-                        let remainingPath = components[(wildcardIndex + 1)...].joined(
-                            separator: "/")
-                        let fullPath = (matchedPath as NSString).appendingPathComponent(
-                            remainingPath)
-                        results.append(contentsOf: expandWildcardPath(fullPath))
+                let matched: Bool
+                if isCellarPath, pattern.hasSuffix("*") {
+                    // Homebrew formula 语义：python@* 匹配 python@3.13；
+                    // go* 匹配 go / go@1.22，但不匹配 golangci-lint。
+                    let prefix = String(pattern.dropLast())
+                    if prefix.hasSuffix("@") {
+                        matched = item.hasPrefix(prefix)
                     } else {
-                        results.append(matchedPath)
+                        matched = item == prefix || item.hasPrefix(prefix + "@")
                     }
+                } else if let regex = regex {
+                    matched =
+                        regex.firstMatch(
+                            in: item, range: NSRange(item.startIndex..., in: item)) != nil
+                } else {
+                    matched = false
+                }
+
+                guard matched else { continue }
+
+                let matchedPath = (basePath as NSString).appendingPathComponent(item)
+
+                // 如果通配符后还有更多路径组件，递归处理
+                if wildcardIndex + 1 < components.count {
+                    let remainingPath = components[(wildcardIndex + 1)...].joined(
+                        separator: "/")
+                    let fullPath = (matchedPath as NSString).appendingPathComponent(
+                        remainingPath)
+                    results.append(contentsOf: expandWildcardPath(fullPath))
+                } else {
+                    results.append(matchedPath)
                 }
             }
         } catch {
@@ -181,15 +274,6 @@ final class CustomVersionManager: ObservableObject, LanguageManager {
             return []
         }
 
-        // 尝试使用 Security-Scoped Bookmark 访问
-        let url = URL(fileURLWithPath: path)
-        let accessGranted = DirectoryAccessManager.shared.startAccessing(url: url)
-        defer {
-            if accessGranted {
-                DirectoryAccessManager.shared.stopAccessing(url: url)
-            }
-        }
-
         do {
             let contents = try fileManager.contentsOfDirectory(atPath: path)
 
@@ -201,13 +285,25 @@ final class CustomVersionManager: ObservableObject, LanguageManager {
                 var isDir: ObjCBool = false
 
                 if fileManager.fileExists(atPath: itemPath, isDirectory: &isDir), isDir.boolValue {
+                    let source = detectSource(for: path, formulaName: item)
+                    // 获取实际的可用路径（处理特殊目录结构）
+                    let actualPath = findActualPath(for: itemPath)
+
+                    // rustup toolchain 的 stable/beta/nightly 目录名没有数字，
+                    // 不能交给 extractVersion，否则会被丢弃。
+                    if isRustToolchainDirectory(path) {
+                        let version = extractVersion(from: item) ?? item
+                        versions.append(
+                            CustomVersion(
+                                version: version,
+                                source: source,
+                                path: actualPath
+                            ))
+                        continue
+                    }
+
                     // 尝试从目录名提取版本号
                     if let version = extractVersion(from: item) {
-                        let source = detectSource(for: path, formulaName: item)
-
-                        // 获取实际的可用路径（处理特殊目录结构）
-                        let actualPath = findActualPath(for: itemPath)
-
                         versions.append(
                             CustomVersion(
                                 version: version,
@@ -241,11 +337,18 @@ final class CustomVersionManager: ObservableObject, LanguageManager {
             return homebrewJdkPath
         }
 
-        // Go: 检查 libexec 结构
+        // Go: 检查 libexec 结构（Homebrew）
         let goLibexec = (basePath as NSString).appendingPathComponent("libexec")
         let goLibexecBin = (goLibexec as NSString).appendingPathComponent("bin/go")
         if fileManager.fileExists(atPath: goLibexecBin) {
             return goLibexec
+        }
+
+        // Go: asdf 的布局是 <install>/go/bin/go，GOROOT 需要指向 <install>/go
+        let goNested = (basePath as NSString).appendingPathComponent("go")
+        let goNestedBin = (goNested as NSString).appendingPathComponent("bin/go")
+        if fileManager.fileExists(atPath: goNestedBin) {
+            return goNested
         }
 
         // 默认返回原始路径
@@ -259,15 +362,17 @@ final class CustomVersionManager: ObservableObject, LanguageManager {
 
         let patterns = [
             // 纯版本号: 3.12.0, 18.0.0
-            "^(\\d+\\.\\d+(?:\\.\\d+)?)$",
+            "^(\\d+(?:\\.\\d+)+)$",
             // 带前缀: ruby-3.2.0, python-3.12.0
-            "^[a-zA-Z]+-?(\\d+\\.\\d+(?:\\.\\d+)?)$",
+            "^[a-zA-Z]+-?(\\d+(?:\\.\\d+)+)$",
             // v前缀: v18.0.0
-            "^v(\\d+\\.\\d+(?:\\.\\d+)?)$",
+            "^v(\\d+(?:\\.\\d+)+)$",
             // go风格: go1.21.0
-            "^[a-zA-Z]+(\\d+\\.\\d+(?:\\.\\d+)?)$",
+            "^[a-zA-Z]+(\\d+(?:\\.\\d+)+)$",
+            // JDK 单数字版本: temurin-17.jdk, jdk-17
+            "^[a-zA-Z][a-zA-Z0-9_-]*-v?(\\d+(?:\\.\\d+)*)(?:\\.jdk)?$",
             // 任意带版本的: xxx-3.2.0-xxx
-            "(\\d+\\.\\d+(?:\\.\\d+)?)",
+            "(\\d+(?:\\.\\d+)+)",
         ]
 
         for pattern in patterns {
@@ -282,8 +387,9 @@ final class CustomVersionManager: ObservableObject, LanguageManager {
             }
         }
 
-        // 如果没有匹配，直接返回目录名作为版本
-        return directoryName
+        // 不再 fallback 到目录名。否则 Flutter 的 bin/dev/examples 等目录
+        // 会被当成版本，产生完全错误的环境配置。
+        return nil
     }
 
     /// 检测版本来源
@@ -319,34 +425,93 @@ final class CustomVersionManager: ObservableObject, LanguageManager {
 
     // MARK: - Environment Script
 
-    /// 生成环境配置脚本
-    private func generateEnvScript(for version: CustomVersion) {
-        guard let envVarName = config.envVarName, !envVarName.isEmpty else {
-            return
+    /// 生成环境配置脚本。
+    /// - Returns: 是否成功写入。即使没有配置 envVarName，也会生成只更新 PATH 的脚本。
+    private func generateEnvScript(for version: CustomVersion) -> Bool {
+        let fileManager = FileManager.default
+        let configDir = RuntimePilotPaths.environmentConfigDirectory
+
+        // 防止 configFileName 或 identifier 中的 ../、/ 把脚本写到配置目录之外
+        let baseURL = configDir.standardizedFileURL
+        let scriptURL = configDir.appendingPathComponent(config.generatedConfigFileName)
+            .standardizedFileURL
+        guard scriptURL.path.hasPrefix(baseURL.path + "/") else {
+            print("Refusing to write env script outside config directory: \(scriptURL.path)")
+            return false
         }
 
-        let configDir = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".config")
-            .appendingPathComponent("switchyourfuckinglanguageversion")
+        let envVarName = (config.envVarName ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if !envVarName.isEmpty {
+            guard CustomLanguageConfig.isValidEnvironmentVariableName(envVarName),
+                !CustomLanguageConfig.isReservedEnvironmentVariable(envVarName)
+            else {
+                print("Refusing to write env script with invalid variable name: \(envVarName)")
+                return false
+            }
+        }
 
-        // 创建目录
-        try? FileManager.default.createDirectory(at: configDir, withIntermediateDirectories: true)
+        let runtimePath = environmentRoot(for: version)
+        let pathEntry = pathEntry(for: runtimePath)
+        let safeName = config.name.replacingOccurrences(of: "\n", with: " ")
 
-        let scriptPath = configDir.appendingPathComponent(config.generatedConfigFileName)
-
-        let scriptContent = """
-            # \(config.name) Environment Configuration
-            # Generated by SYFLV
-            # Active version: \(version.version)
-
-            export \(envVarName)="\(version.path)"
-            export PATH="$\(envVarName)/bin:$PATH"
-            """
+        var lines = [
+            "# \(safeName) Environment Configuration",
+            "# Generated by SYFLV",
+            "# Active version: \(version.version)",
+            "",
+        ]
+        if !envVarName.isEmpty {
+            lines.append("export \(envVarName)=\"\(shellDoubleQuoted(runtimePath))\"")
+        }
+        lines.append("export PATH=\"\(shellDoubleQuoted(pathEntry)):$PATH\"")
+        let scriptContent = lines.joined(separator: "\n") + "\n"
 
         do {
-            try scriptContent.write(to: scriptPath, atomically: true, encoding: .utf8)
+            try fileManager.createDirectory(at: configDir, withIntermediateDirectories: true)
+            try scriptContent.write(to: scriptURL, atomically: true, encoding: .utf8)
+            return true
         } catch {
             print("Failed to write env script: \(error)")
+            return false
         }
     }
+
+    /// 版本在环境变量中实际应指向的运行时根目录。
+    /// 目前 .NET SDK 的扫描路径是 <dotnetRoot>/sdk/<version>，而 DOTNET_ROOT 需要的是 <dotnetRoot>。
+    private func environmentRoot(for version: CustomVersion) -> String {
+        if config.envVarName?.uppercased() == "DOTNET_ROOT" {
+            let sdkURL = URL(fileURLWithPath: version.path).deletingLastPathComponent()
+            if sdkURL.lastPathComponent == "sdk" {
+                let rootURL = sdkURL.deletingLastPathComponent()
+                if FileManager.default.fileExists(
+                    atPath: rootURL.appendingPathComponent("dotnet").path)
+                {
+                    return rootURL.path
+                }
+            }
+        }
+        return version.path
+    }
+
+    /// 生成 PATH 条目：运行时根目录 + 配置的 bin 子目录
+    private func pathEntry(for runtimePath: String) -> String {
+        let suffix = config.effectivePathSuffix
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        if suffix.isEmpty {
+            return runtimePath
+        }
+        return (runtimePath as NSString).appendingPathComponent(suffix)
+    }
+
+    /// 将路径转义后放入 shell 的双引号字符串中
+    private func shellDoubleQuoted(_ value: String) -> String {
+        return
+            value
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+            .replacingOccurrences(of: "$", with: "\\$")
+            .replacingOccurrences(of: "`", with: "\\`")
+    }
+
 }

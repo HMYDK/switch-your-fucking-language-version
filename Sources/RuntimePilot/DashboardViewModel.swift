@@ -8,6 +8,7 @@ struct LanguageStatus: Identifiable {
     let id: String
     let displayName: String
     let iconName: String
+    let iconType: IconType
     let color: Color
     let activeVersion: String?
     let activeSource: String?
@@ -26,32 +27,29 @@ class DashboardViewModel: ObservableObject {
     private let registry: LanguageRegistry
     private var cancellables = Set<AnyCancellable>()
     private var managerCancellables = Set<AnyCancellable>()
-    private var observedManagerIds = Set<String>()
 
     init(registry: LanguageRegistry) {
         self.registry = registry
 
-        // 监听 registry 的变化，并重新设置 manager observers
+        // @Published 在 willSet 阶段发值；如果同步读取 registry.allLanguages
+        // 仍然会拿到旧列表。推迟到下一个主线程周期再刷新。
         registry.$languages
             .sink { [weak self] _ in
-                self?.setupManagerObservers()
-                self?.updateStatuses()
+                DispatchQueue.main.async {
+                    self?.setupManagerObservers()
+                    self?.updateStatuses()
+                }
             }
             .store(in: &cancellables)
 
-        // 初始化状态
         updateStatuses()
-
-        // 监听每个语言管理器的变化
         setupManagerObservers()
     }
 
     private func setupManagerObservers() {
-        // 只为新增的语言管理器添加监听
+        // registry 变更不频繁，直接重建监听，避免 id 复用后仍监听旧 manager
+        managerCancellables.removeAll()
         for language in registry.allLanguages {
-            guard !observedManagerIds.contains(language.id) else { continue }
-            observedManagerIds.insert(language.id)
-
             language.manager.objectWillChange
                 .sink { [weak self] _ in
                     DispatchQueue.main.async {
@@ -71,6 +69,7 @@ class DashboardViewModel: ObservableObject {
                 id: metadata.id,
                 displayName: metadata.displayName,
                 iconName: metadata.iconName,
+                iconType: metadata.iconType,
                 color: metadata.color,
                 activeVersion: manager.activeVersion?.version,
                 activeSource: manager.activeVersion?.source,

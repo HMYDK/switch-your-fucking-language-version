@@ -6,8 +6,21 @@ struct GenericLanguageView: View {
     @ObservedObject var manager: AnyLanguageManager
     @ObservedObject private var localization = LocalizationManager.shared
 
-    @State private var showSwitchAlert = false
-    @State private var lastSwitchedVersion: AnyLanguageVersion?
+    private enum SwitchFeedback: Identifiable {
+        case success(AnyLanguageVersion)
+        case failure(AnyLanguageVersion)
+
+        var id: String {
+            switch self {
+            case .success(let version):
+                return "success-\(version.id)"
+            case .failure(let version):
+                return "failure-\(version.id)"
+            }
+        }
+    }
+
+    @State private var switchFeedback: SwitchFeedback?
 
     private var displayedVersions: [AnyLanguageVersion] {
         var sorted = manager.installedVersions.sorted { lhs, rhs in
@@ -30,6 +43,7 @@ struct GenericLanguageView: View {
             if manager.installedVersions.isEmpty {
                 ModernEmptyState(
                     iconImage: metadata.iconName,
+                    iconType: metadata.iconType,
                     title: L(.languageNoVersionsFound, metadata.displayName),
                     message: L(.languageInstallHint),
                     color: metadata.color,
@@ -60,14 +74,25 @@ struct GenericLanguageView: View {
                 .accessibilityLabel(L(.languageRefresh))
             }
         }
-        .alert(L(.versionSwitchTitle), isPresented: $showSwitchAlert) {
-            Button(L(.versionSwitchOpenTerminal)) {
-                openTerminal()
-            }
-            Button(L(.versionSwitchDismiss), role: .cancel) { }
-        } message: {
-            if let version = lastSwitchedVersion {
-                Text(L(.versionSwitchMessage, metadata.displayName, version.version))
+        .alert(item: $switchFeedback) { feedback in
+            switch feedback {
+            case .success(let version):
+                return Alert(
+                    title: Text(L(.versionSwitchTitle)),
+                    message: Text(
+                        L(.versionSwitchMessage, metadata.displayName, version.version)),
+                    primaryButton: .default(Text(L(.versionSwitchOpenTerminal))) {
+                        openTerminal()
+                    },
+                    secondaryButton: .cancel(Text(L(.versionSwitchDismiss)))
+                )
+            case .failure(let version):
+                return Alert(
+                    title: Text(L(.versionSwitchFailedTitle)),
+                    message: Text(
+                        L(.versionSwitchFailedMessage, metadata.displayName, version.version)),
+                    dismissButton: .default(Text(L(.sharedOk)))
+                )
             }
         }
     }
@@ -85,12 +110,12 @@ struct GenericLanguageView: View {
                         path: version.path,
                         isActive: manager.activeVersion?.id == version.id,
                         iconImage: metadata.iconName,
+                        iconType: metadata.iconType,
                         color: metadata.color,
                         onUse: {
+                            let succeeded = manager.setActive(version)
                             withAnimation(.easeInOut(duration: 0.25)) {
-                                manager.setActive(version)
-                                lastSwitchedVersion = version
-                                showSwitchAlert = true
+                                switchFeedback = succeeded ? .success(version) : .failure(version)
                             }
                         },
                         onOpenFinder: {
@@ -108,7 +133,8 @@ struct GenericLanguageView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: DMSpace.l) {
             HStack(spacing: DMSpace.m) {
-                LanguageIconView(imageName: metadata.iconName, size: 32)
+                LanguageIconView(
+                    imageName: metadata.iconName, iconType: metadata.iconType, size: 32)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(metadata.displayName)
                         .font(DMTypography.title2)
@@ -155,7 +181,7 @@ struct GenericLanguageView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(L(.languageNoActiveVersion))
                                 .font(DMTypography.section)
-                            Text("Select a version to generate environment configuration.")
+                            Text(L(.languageSelectVersionHint))
                                 .font(DMTypography.caption)
                                 .foregroundStyle(.secondary)
                         }

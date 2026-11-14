@@ -331,7 +331,8 @@ private struct EnvironmentCard: View {
                             )
                             .frame(width: 44, height: 44)
 
-                        LanguageIconView(imageName: status.iconName, size: 24)
+                        LanguageIconView(
+                            imageName: status.iconName, iconType: status.iconType, size: 24)
                             .opacity(status.installedCount == 0 ? 0.5 : 1)
                     }
 
@@ -435,7 +436,7 @@ private struct DetailItem: View {
                 HStack(spacing: 4) {
                     Image(systemName: "mug.fill")
                         .font(.system(size: 10))
-                    Text("Homebrew")
+                    Text(L(.sharedHomebrew))
                         .font(.system(size: 12, weight: .medium))
                 }
                 .foregroundStyle(Color(red: 0.95, green: 0.55, blue: 0.15))

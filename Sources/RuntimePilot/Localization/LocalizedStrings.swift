@@ -73,6 +73,10 @@ enum LocalizedKey: String {
     case languageCurrent = "language.current"
     case languageUse = "language.use"
     case languageVersions = "language.versions"
+    case languageSelectVersionHint = "language.selectVersionHint"
+    case languageVersionsInstalled = "language.versionsInstalled"
+    case languageInstallHintShort = "language.installHintShort"
+    case versionCardUseThisVersion = "versionCard.useThisVersion"
 
     // Shared Views
     case sharedHomebrew = "shared.homebrew"
@@ -94,12 +98,17 @@ enum LocalizedKey: String {
     case sharedSkip = "shared.skip"
     case sharedContinue = "shared.continue"
     case sharedBack = "shared.back"
+    case sharedOk = "shared.ok"
+    case sharedCopy = "shared.copy"
+    case sharedShellSetup = "shared.shellSetup"
 
     // Version Switch Toast
     case versionSwitchTitle = "versionSwitch.title"
     case versionSwitchMessage = "versionSwitch.message"
     case versionSwitchOpenTerminal = "versionSwitch.openTerminal"
     case versionSwitchDismiss = "versionSwitch.dismiss"
+    case versionSwitchFailedTitle = "versionSwitch.failedTitle"
+    case versionSwitchFailedMessage = "versionSwitch.failedMessage"
 
     // Onboarding
     case onboardingWelcome = "onboarding.welcome"
@@ -117,6 +126,7 @@ enum LocalizedKey: String {
     case onboardingDirectoryList = "onboarding.directoryList"
     case onboardingAccessNote = "onboarding.accessNote"
     case onboardingSelected = "onboarding.selected"
+    case directoryAccessPanelMessage = "directoryAccess.panelMessage"
 
     // Settings
     case settingsTitle = "settings.title"
@@ -173,6 +183,21 @@ enum LocalizedKey: String {
     case customLanguageDeleteConfirm = "customLanguage.deleteConfirm"
     case customLanguageNoCustomLanguages = "customLanguage.noCustomLanguages"
     case customLanguageAddHint = "customLanguage.addHint"
+    case customLanguageIdentifierLocked = "customLanguage.identifierLocked"
+    case customLanguageChooseIcon = "customLanguage.chooseIcon"
+    case customLanguageNoPaths = "customLanguage.noPaths"
+    case customLanguageQuickAddTemplates = "customLanguage.quickAddTemplates"
+    case customLanguageAdvancedOptions = "customLanguage.advancedOptions"
+    case customLanguageScanPathCount = "customLanguage.scanPathCount"
+    case customLanguageSearchSymbols = "customLanguage.searchSymbols"
+    case customLanguageEnvVarDescription = "customLanguage.envVarDescription"
+    case customLanguageNameFallback = "customLanguage.nameFallback"
+    case customLanguageErrorNameRequired = "customLanguage.error.nameRequired"
+    case customLanguageErrorIdentifierRequired = "customLanguage.error.identifierRequired"
+    case customLanguageErrorIdentifierInvalid = "customLanguage.error.identifierInvalid"
+    case customLanguageErrorScanPathRequired = "customLanguage.error.scanPathRequired"
+    case customLanguageErrorEnvVarInvalid = "customLanguage.error.envVarInvalid"
+    case customLanguageErrorEnvVarReserved = "customLanguage.error.envVarReserved"
 
     // Menu
     case menuTools = "menu.tools"

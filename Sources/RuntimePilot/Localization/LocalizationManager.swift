@@ -153,6 +153,10 @@ private let englishStrings: [String: String] = [
     "language.current": "CURRENT",
     "language.use": "Use",
     "language.versions": "versions",
+    "language.selectVersionHint": "Select a version to generate environment configuration.",
+    "language.versionsInstalled": "%d versions installed",
+    "language.installHintShort": "Use Homebrew or version managers to install",
+    "versionCard.useThisVersion": "Use This Version",
 
     // Shared Views
     "shared.homebrew": "Homebrew",
@@ -174,6 +178,9 @@ private let englishStrings: [String: String] = [
     "shared.skip": "Skip",
     "shared.continue": "Continue",
     "shared.back": "Back",
+    "shared.ok": "OK",
+    "shared.copy": "Copy",
+    "shared.shellSetup": "Shell Setup",
 
     // Onboarding
     "onboarding.welcome": "Welcome to RuntimePilot",
@@ -186,12 +193,14 @@ private let englishStrings: [String: String] = [
     "onboarding.notAuthorized": "Not Authorized",
     "onboarding.chooseLanguages": "Choose which programming languages you want to manage",
     "onboarding.directoryAccess": "Directory Access",
-    "onboarding.languageHint": "You can always add or remove languages later in Settings",
+    "onboarding.languageHint": "You can always add or remove languages later from the sidebar",
     "onboarding.directoryHint":
         "Grant access to directories where your language versions are installed",
     "onboarding.directoryList": "Recommended directories to authorize:",
     "onboarding.accessNote": "Access is required for RuntimePilot to scan and manage your versions",
     "onboarding.selected": "selected",
+    "directoryAccess.panelMessage":
+        "Select a directory to grant RuntimePilot access for scanning installed versions.",
 
     // Settings
     "settings.title": "Settings",
@@ -207,7 +216,7 @@ private let englishStrings: [String: String] = [
 
     // Scan Paths
     "scanPath.description":
-        "Manage version scan paths for each language. Built-in paths cannot be modified, but you can add custom paths.",
+        "Manage version scan paths for each language. Removing a path stops that location from being scanned; add custom paths as needed.",
     "scanPath.builtIn": "Default Scan Paths",
     "scanPath.custom": "Custom Scan Paths",
     "scanPath.noCustom": "No custom paths added",
@@ -249,6 +258,25 @@ private let englishStrings: [String: String] = [
     "customLanguage.deleteConfirm": "Are you sure you want to delete this language?",
     "customLanguage.noCustomLanguages": "No custom languages",
     "customLanguage.addHint": "Click + to add a custom language",
+    "customLanguage.identifierLocked": "Identifier cannot be changed after creation",
+    "customLanguage.chooseIcon": "Choose Icon...",
+    "customLanguage.noPaths": "No paths configured",
+    "customLanguage.quickAddTemplates": "Quick Add Templates",
+    "customLanguage.advancedOptions": "Advanced Options",
+    "customLanguage.scanPathCount": "%d scan path(s)",
+    "customLanguage.searchSymbols": "Search symbols...",
+    "customLanguage.envVarDescription":
+        "The environment variable that will be set to point to the active version path.",
+    "customLanguage.nameFallback": "Language Name",
+    "customLanguage.error.nameRequired": "Name is required",
+    "customLanguage.error.identifierRequired": "Identifier is required",
+    "customLanguage.error.identifierInvalid":
+        "Identifier must start with a letter or number and may only contain letters, numbers, '.', '_' and '-'",
+    "customLanguage.error.scanPathRequired": "At least one scan path is required",
+    "customLanguage.error.envVarInvalid":
+        "Environment variable must start with a letter or underscore and contain only letters, numbers and underscores",
+    "customLanguage.error.envVarReserved":
+        "This environment variable is reserved by the shell and cannot be managed here",
 
     // Menu
     "menu.tools": "Tools",
@@ -261,6 +289,9 @@ private let englishStrings: [String: String] = [
     "versionSwitch.message": "%@ %@ is now active. Environment variables have been updated. Open a new terminal to use the new version.",
     "versionSwitch.openTerminal": "Open Terminal",
     "versionSwitch.dismiss": "Dismiss",
+    "versionSwitch.failedTitle": "Version Switch Failed",
+    "versionSwitch.failedMessage":
+        "%@ %@ could not be activated. Check the environment variable, the version path, and write permissions for ~/.config/switchyourfuckinglanguageversion.",
 ]
 
 // MARK: - Chinese Strings
@@ -335,6 +366,10 @@ private let chineseStrings: [String: String] = [
     "language.current": "当前",
     "language.use": "使用",
     "language.versions": "个版本",
+    "language.selectVersionHint": "选择一个版本以生成环境配置。",
+    "language.versionsInstalled": "已安装 %d 个版本",
+    "language.installHintShort": "使用 Homebrew 或版本管理器安装",
+    "versionCard.useThisVersion": "使用此版本",
 
     // Shared Views
     "shared.homebrew": "Homebrew",
@@ -356,6 +391,9 @@ private let chineseStrings: [String: String] = [
     "shared.skip": "跳过",
     "shared.continue": "继续",
     "shared.back": "返回",
+    "shared.ok": "好",
+    "shared.copy": "复制",
+    "shared.shellSetup": "Shell 配置",
 
     // Onboarding
     "onboarding.welcome": "欢迎使用 RuntimePilot",
@@ -368,11 +406,12 @@ private let chineseStrings: [String: String] = [
     "onboarding.notAuthorized": "未授权",
     "onboarding.chooseLanguages": "选择您要管理的编程语言",
     "onboarding.directoryAccess": "目录访问权限",
-    "onboarding.languageHint": "您可以随时在设置中添加或移除语言",
+    "onboarding.languageHint": "您可以随时在侧边栏中添加或移除语言",
     "onboarding.directoryHint": "授权访问安装了语言版本的目录",
     "onboarding.directoryList": "推荐授权的目录：",
     "onboarding.accessNote": "RuntimePilot 需要访问权限来扫描和管理您的版本",
     "onboarding.selected": "已选择",
+    "directoryAccess.panelMessage": "选择要授权 RuntimePilot 扫描版本的目录。",
 
     // Settings
     "settings.title": "设置",
@@ -387,7 +426,7 @@ private let chineseStrings: [String: String] = [
     "settings.addDir": "添加目录",
 
     // Scan Paths
-    "scanPath.description": "管理各语言的版本扫描路径。内置路径不可修改，但您可以添加自定义路径。",
+    "scanPath.description": "管理各语言的版本扫描路径。删除路径后该位置将不再被扫描；可按需添加自定义路径。",
     "scanPath.builtIn": "默认扫描路径",
     "scanPath.custom": "自定义扫描路径",
     "scanPath.noCustom": "未添加自定义路径",
@@ -429,6 +468,23 @@ private let chineseStrings: [String: String] = [
     "customLanguage.deleteConfirm": "确定要删除这个语言吗？",
     "customLanguage.noCustomLanguages": "没有自定义语言",
     "customLanguage.addHint": "点击 + 添加自定义语言",
+    "customLanguage.identifierLocked": "创建后无法修改标识符",
+    "customLanguage.chooseIcon": "选择图标...",
+    "customLanguage.noPaths": "未配置路径",
+    "customLanguage.quickAddTemplates": "快速添加模板",
+    "customLanguage.advancedOptions": "高级选项",
+    "customLanguage.scanPathCount": "%d 个扫描路径",
+    "customLanguage.searchSymbols": "搜索图标...",
+    "customLanguage.envVarDescription": "激活版本时会将该环境变量设置为版本的路径。",
+    "customLanguage.nameFallback": "语言名称",
+    "customLanguage.error.nameRequired": "名称不能为空",
+    "customLanguage.error.identifierRequired": "标识符不能为空",
+    "customLanguage.error.identifierInvalid":
+        "标识符必须以字母或数字开头，且只能包含字母、数字、点、下划线和连字符",
+    "customLanguage.error.scanPathRequired": "至少需要一个扫描路径",
+    "customLanguage.error.envVarInvalid":
+        "环境变量必须以字母或下划线开头，且只能包含字母、数字和下划线",
+    "customLanguage.error.envVarReserved": "该环境变量被 Shell 保留，不能在这里管理",
 
     // Menu
     "menu.tools": "工具",
@@ -441,4 +497,7 @@ private let chineseStrings: [String: String] = [
     "versionSwitch.message": "%@ %@ 已激活。环境变量已更新，需要打开新终端才能使用新版本。",
     "versionSwitch.openTerminal": "打开终端",
     "versionSwitch.dismiss": "知道了",
+    "versionSwitch.failedTitle": "版本切换失败",
+    "versionSwitch.failedMessage":
+        "%@ %@ 激活失败。请检查环境变量、版本路径，以及 ~/.config/switchyourfuckinglanguageversion 的写入权限。",
 ]

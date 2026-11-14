@@ -151,11 +151,11 @@ struct ContentView: View {
                     )
                 } else if case .language(let languageId) = selection {
                     if let config = customLanguageManager.getConfig(identifier: languageId),
-                        let manager = customLanguageManager.getVersionManager(for: languageId)
+                        let manager = registry.getManager(for: languageId)
                     {
                         GenericLanguageView(
                             metadata: config.toMetadata(),
-                            manager: AnyLanguageManager(manager)
+                            manager: manager
                         )
                         .id(languageId)
                     } else {
@@ -170,25 +170,31 @@ struct ContentView: View {
         .frame(minWidth: 860, idealWidth: 1200, minHeight: 600, idealHeight: 800)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(isPresented: $showingCustomLanguageEditor) {
-            CustomLanguageEditorView { config in
+            CustomLanguageEditorView(onSave: { config in
                 // 注册新语言到 registry
                 if let manager = customLanguageManager.getVersionManager(for: config.identifier) {
                     registry.register(
                         metadata: config.toMetadata(), manager: manager)
                 }
-            }
+            })
         }
         .sheet(item: $editingCustomLanguage) { config in
-            CustomLanguageEditorView(config: config) { updatedConfig in
-                // 更新 registry
-                registry.unregister(id: config.identifier)
-                if let manager = customLanguageManager.getVersionManager(
-                    for: updatedConfig.identifier)
-                {
-                    registry.register(
-                        metadata: updatedConfig.toMetadata(), manager: manager)
+            CustomLanguageEditorView(
+                config: config,
+                onSave: { updatedConfig in
+                    // 更新 registry
+                    registry.unregister(id: config.identifier)
+                    if let manager = customLanguageManager.getVersionManager(
+                        for: updatedConfig.identifier)
+                    {
+                        registry.register(
+                            metadata: updatedConfig.toMetadata(), manager: manager)
+                    }
+                },
+                onDelete: { deletedConfig in
+                    deleteCustomLanguage(deletedConfig)
                 }
-            }
+            )
         }
     }
 
@@ -203,6 +209,8 @@ struct ContentView: View {
                 .font(.system(size: 9, weight: .bold))
                 .foregroundColor(.secondary.opacity(0.6))
                 .tracking(1.2)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
             RoundedRectangle(cornerRadius: 1)
                 .fill(Color.secondary.opacity(0.3))
                 .frame(height: 2)
@@ -412,7 +420,7 @@ private struct SidebarNavItem: View {
                             .foregroundStyle(.red.opacity(0.8))
                     }
                     .buttonStyle(.plain)
-                    .help("Delete")
+                    .help(L(.sharedDelete))
                     .transition(.opacity)
                 }
 

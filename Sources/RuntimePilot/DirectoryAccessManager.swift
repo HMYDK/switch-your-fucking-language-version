@@ -55,9 +55,8 @@ class DirectoryAccessManager: ObservableObject {
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
         panel.canCreateDirectories = false
-        panel.prompt = "Grant Access"
-        panel.message =
-            "Select a directory to grant RuntimePilot access for scanning installed versions."
+        panel.prompt = L(.onboardingGrantAccess)
+        panel.message = L(.directoryAccessPanelMessage)
 
         // 设置建议的初始目录
         if let path = suggestedPath {
@@ -122,13 +121,61 @@ class DirectoryAccessManager: ObservableObject {
     /// - Parameter path: 要检查的路径
     /// - Returns: 是否有访问权限
     func hasAccess(to path: String) -> Bool {
+        authorizedRoot(for: path) != nil
+    }
+
+    /// 找到能够覆盖该路径的最深层已授权目录
+    func authorizedRoot(for path: String) -> URL? {
         let expandedPath = NSString(string: path).expandingTildeInPath
-        return authorizedDirectories.contains { url in
-            expandedPath.hasPrefix(url.path)
+        let target = URL(fileURLWithPath: expandedPath).standardizedFileURL.path
+
+        return currentAuthorizedDirectories()
+            .filter { url in
+                let root = url.standardizedFileURL.path
+                return target == root || target.hasPrefix(root + "/")
+            }
+            .max { lhs, rhs in
+                lhs.standardizedFileURL.path.count < rhs.standardizedFileURL.path.count
+            }
+    }
+
+    /// 对一组扫描路径，在最佳授权目录的 scope 内执行操作。
+    /// 这是 Security-Scoped Bookmark 的正确用法：在授权根目录上 startAccessing，
+    /// 而不是在扫描的子目录上（子目录 URL 并不是 bookmark 解析出来的 URL）。
+    @discardableResult
+    func withBestAccess<T>(to paths: [String], perform operation: () -> T) -> T {
+        var startedRoots: [URL] = []
+        var seenRoots = Set<String>()
+
+        for path in paths {
+            guard let root = authorizedRoot(for: path) else { continue }
+            let key = root.standardizedFileURL.path
+            guard seenRoots.insert(key).inserted else { continue }
+            if startAccessing(url: root) {
+                startedRoots.append(root)
+            }
         }
+
+        defer {
+            for root in startedRoots {
+                stopAccessing(url: root)
+            }
+        }
+        return operation()
     }
 
     // MARK: - Private Methods
+
+    /// 扫描发生在后台线程，而 authorizedDirectories 是 @Published 状态。
+    /// 从后台读取时同步到主线程取一份快照，避免数据竞争。
+    private func currentAuthorizedDirectories() -> [URL] {
+        if Thread.isMainThread {
+            return authorizedDirectories
+        }
+        return DispatchQueue.main.sync {
+            authorizedDirectories
+        }
+    }
 
     /// 保存单个目录的 bookmark
     private func saveBookmark(for url: URL) throws {

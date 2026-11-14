@@ -23,7 +23,10 @@ protocol LanguageManager: AnyObject, ObservableObject {
     var activeVersion: Version? { get }
 
     func refresh()
-    func setActive(_ version: Version)
+
+    /// 切换版本并写入环境脚本。返回 false 表示脚本生成/写入失败，调用方必须提示用户。
+    @discardableResult
+    func setActive(_ version: Version) -> Bool
 }
 
 // MARK: - Type Erased Language Version
@@ -51,10 +54,9 @@ class AnyLanguageManager: ObservableObject {
     @Published private(set) var activeVersion: AnyLanguageVersion?
 
     private let _refresh: () -> Void
-    private let _setActive: (AnyLanguageVersion) -> Void
+    private let _setActive: (AnyLanguageVersion) -> Bool
 
     private var cancellables = Set<AnyCancellable>()
-    private var updateTimer: Timer?
 
     init<M: LanguageManager>(_ manager: M) {
         // 初始化版本列表
@@ -67,40 +69,37 @@ class AnyLanguageManager: ObservableObject {
         }
 
         _setActive = { [weak manager] anyVersion in
-            guard let manager = manager else { return }
-            // 从原始版本列表中找到对应的版本
-            if let originalVersion = manager.installedVersions.first(where: {
+            guard let manager = manager else { return false }
+            // 优先按 UUID 查找，刷新后 UUID 会变化，因此再按路径兜底
+            guard let originalVersion = manager.installedVersions.first(where: {
                 $0.id == anyVersion.id
-            }) {
-                manager.setActive(originalVersion)
+            }) ?? manager.installedVersions.first(where: {
+                $0.path == anyVersion.path
+            }) else {
+                return false
             }
+            return manager.setActive(originalVersion)
         }
 
-        // 订阅原始 Manager 的变化
-        manager.objectWillChange.sink { [weak self] _ in
-            self?.objectWillChange.send()
-        }.store(in: &cancellables)
-
-        // 设置定时更新（使用轮询方式）
-        updateTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) {
-            [weak self, weak manager] _ in
-            guard let self = self, let manager = manager else { return }
-            DispatchQueue.main.async {
-                self.installedVersions = manager.installedVersions.map { AnyLanguageVersion($0) }
-                self.activeVersion = manager.activeVersion.map { AnyLanguageVersion($0) }
+        // 只在底层 Manager 真正发生变化时同步一次，不再使用 100ms 轮询。
+        // objectWillChange 在属性变更前发出，因此将读取推迟到下一个主线程周期。
+        manager.objectWillChange
+            .sink { [weak self, weak manager] _ in
+                DispatchQueue.main.async {
+                    guard let self = self, let manager = manager else { return }
+                    self.installedVersions = manager.installedVersions.map { AnyLanguageVersion($0) }
+                    self.activeVersion = manager.activeVersion.map { AnyLanguageVersion($0) }
+                }
             }
-        }
-    }
-
-    deinit {
-        updateTimer?.invalidate()
+            .store(in: &cancellables)
     }
 
     func refresh() {
         _refresh()
     }
 
-    func setActive(_ version: AnyLanguageVersion) {
+    @discardableResult
+    func setActive(_ version: AnyLanguageVersion) -> Bool {
         _setActive(version)
     }
 }

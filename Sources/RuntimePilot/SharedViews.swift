@@ -15,7 +15,7 @@ struct SourceTagView: View {
             HStack(spacing: 4) {
                 Image(systemName: "mug.fill")
                     .font(.system(size: 10, weight: .bold))
-                Text("Homebrew")
+                Text(L(.sharedHomebrew))
                     .font(.system(size: 11, weight: .semibold))
             }
             .fixedSize()
@@ -43,21 +43,34 @@ struct SourceTagView: View {
 
 struct LanguageIconView: View {
     let imageName: String
+    let iconType: IconType
     let size: CGFloat
 
+    init(imageName: String, iconType: IconType = .customImage, size: CGFloat) {
+        self.imageName = imageName
+        self.iconType = iconType
+        self.size = size
+    }
+
     var body: some View {
-        if let url = Bundle.module.url(forResource: imageName, withExtension: "png"),
-            let nsImage = NSImage(contentsOf: url)
-        {
-            Image(nsImage: nsImage)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: size, height: size)
-        } else {
-            Image(systemName: "questionmark.circle")
-                .font(.system(size: size * 0.8))
-                .foregroundColor(.secondary)
-                .frame(width: size, height: size)
+        Group {
+            if iconType == .systemSymbol {
+                Image(systemName: imageName)
+                    .font(.system(size: size * 0.8, weight: .semibold))
+                    .frame(width: size, height: size)
+            } else if let url = Bundle.module.url(forResource: imageName, withExtension: "png"),
+                let nsImage = NSImage(contentsOf: url)
+            {
+                Image(nsImage: nsImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: size, height: size)
+            } else {
+                Image(systemName: "questionmark.circle")
+                    .font(.system(size: size * 0.8))
+                    .foregroundColor(.secondary)
+                    .frame(width: size, height: size)
+            }
         }
     }
 }
@@ -70,6 +83,7 @@ struct ModernVersionCard: View {
     let path: String
     let isActive: Bool
     let iconImage: String
+    let iconType: IconType
     let color: Color
     let onUse: () -> Void
     let onOpenFinder: () -> Void
@@ -87,7 +101,7 @@ struct ModernVersionCard: View {
                         .fill(isActive ? color.opacity(0.15) : Color.gray.opacity(0.08))
                         .frame(width: 44, height: 44)
 
-                    LanguageIconView(imageName: iconImage, size: 24)
+                    LanguageIconView(imageName: iconImage, iconType: iconType, size: 24)
                 }
 
                 // Version & Source
@@ -98,7 +112,7 @@ struct ModernVersionCard: View {
                             .lineLimit(1)
 
                         if isActive {
-                            Text("CURRENT")
+                            Text(L(.languageCurrent))
                                 .font(.system(size: 9, weight: .bold))
                                 .foregroundColor(.white)
                                 .fixedSize()
@@ -124,7 +138,7 @@ struct ModernVersionCard: View {
                 } else {
                     HStack(spacing: 6) {
                         Button(action: onUse) {
-                            Text("Use")
+                            Text(L(.languageUse))
                                 .font(.system(size: 12, weight: .semibold))
                                 .foregroundColor(.white)
                                 .fixedSize()
@@ -217,14 +231,14 @@ struct ModernVersionCard: View {
             isHovered = hovering
         }
         .contextMenu {
-            Button("Use This Version") { onUse() }
+            Button(L(.versionCardUseThisVersion)) { onUse() }
                 .disabled(isActive)
             Divider()
-            Button("Copy Path") {
+            Button(L(.sharedCopyPath)) {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(path, forType: .string)
             }
-            Button("Reveal in Finder") { onOpenFinder() }
+            Button(L(.sharedRevealInFinder)) { onOpenFinder() }
         }
     }
 }
@@ -242,7 +256,7 @@ struct ConfigHintView: View {
                 Image(systemName: "gearshape.fill")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(.orange)
-                Text("Setup Required")
+                Text(L(.sharedShellSetup))
                     .font(.system(size: 12, weight: .bold))
                     .foregroundColor(.orange)
                 Spacer()
@@ -314,6 +328,7 @@ struct ConfigHintView: View {
 
 struct ModernEmptyState: View {
     let iconImage: String
+    let iconType: IconType
     let title: String
     let message: String
     let color: Color
@@ -329,7 +344,7 @@ struct ModernEmptyState: View {
                     .fill(DMGradient.subtle(color))
                     .frame(width: 100, height: 100)
 
-                LanguageIconView(imageName: iconImage, size: 48)
+                LanguageIconView(imageName: iconImage, iconType: iconType, size: 48)
                     .opacity(0.6)
             }
 
@@ -351,7 +366,7 @@ struct ModernEmptyState: View {
                 HStack(spacing: DMSpace.xs) {
                     Image(systemName: "arrow.clockwise")
                         .font(.system(size: 13, weight: .semibold))
-                    Text("Refresh")
+                    Text(L(.languageRefresh))
                         .font(.system(size: 14, weight: .semibold))
                 }
                 .padding(.horizontal, DMSpace.xl)
@@ -397,7 +412,7 @@ struct VersionActionBar: View {
                         .foregroundColor(color)
                 }
 
-                Text("\(installedCount) version\(installedCount == 1 ? "" : "s") installed")
+                Text(L(.languageVersionsInstalled, installedCount))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.primary)
             }
@@ -409,7 +424,7 @@ struct VersionActionBar: View {
                 Image(systemName: "terminal")
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
-                Text("Use Homebrew or version managers to install")
+                Text(L(.languageInstallHintShort))
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.secondary)
             }

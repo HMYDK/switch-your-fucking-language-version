@@ -10,6 +10,7 @@ struct LanguageMetadata: Identifiable {
     let color: Color
     let configFileName: String
     let order: Int
+    let iconType: IconType
 
     init(
         id: String,
@@ -17,7 +18,8 @@ struct LanguageMetadata: Identifiable {
         iconName: String,
         color: Color,
         configFileName: String,
-        order: Int = 0
+        order: Int = 0,
+        iconType: IconType = .customImage
     ) {
         self.id = id
         self.displayName = displayName
@@ -25,5 +27,6 @@ struct LanguageMetadata: Identifiable {
         self.color = color
         self.configFileName = configFileName
         self.order = order
+        self.iconType = iconType
     }
 }

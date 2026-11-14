@@ -16,6 +16,11 @@ struct CustomLanguageConfig: Codable, Identifiable, Equatable {
     var order: Int
     var iconType: IconType
 
+    /// 生成 PATH 时附加在版本路径后的子目录。nil 表示使用默认值（"bin"）。
+    /// .NET 这类可执行文件直接位于根目录的运行时使用空字符串。
+    /// 该字段是后加的，旧配置解码时缺失会得到 nil，保持向后兼容。
+    var pathSuffix: String?
+
     init(
         id: UUID = UUID(),
         name: String = "",
@@ -26,7 +31,8 @@ struct CustomLanguageConfig: Codable, Identifiable, Equatable {
         envVarName: String? = nil,
         configFileName: String = "",
         order: Int = 100,
-        iconType: IconType = .systemSymbol
+        iconType: IconType = .systemSymbol,
+        pathSuffix: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -38,6 +44,7 @@ struct CustomLanguageConfig: Codable, Identifiable, Equatable {
         self.configFileName = configFileName
         self.order = order
         self.iconType = iconType
+        self.pathSuffix = pathSuffix
     }
 
     /// 从十六进制字符串获取颜色
@@ -63,6 +70,12 @@ struct CustomLanguageConfig: Codable, Identifiable, Equatable {
         }
     }
 
+    /// 生成的环境脚本 URL
+    var generatedEnvironmentScriptURL: URL {
+        RuntimePilotPaths.environmentConfigDirectory
+            .appendingPathComponent(generatedConfigFileName)
+    }
+
     /// 转换为 LanguageMetadata
     func toMetadata() -> LanguageMetadata {
         LanguageMetadata(
@@ -72,29 +85,110 @@ struct CustomLanguageConfig: Codable, Identifiable, Equatable {
             color: color,
             configFileName: generatedConfigFileName,
             order: order,
-            isCustom: true,
             iconType: iconType
         )
     }
 
+    /// 生成 PATH 时版本路径后应追加的子目录
+    var effectivePathSuffix: String {
+        if let pathSuffix = pathSuffix {
+            return pathSuffix
+        }
+        // 兼容旧版本保存的 .NET 配置
+        if envVarName == "DOTNET_ROOT" {
+            return ""
+        }
+        return "bin"
+    }
+
+    // MARK: - Validation
+
+    private static let identifierFirstCharacters = CharacterSet(
+        charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+    private static let identifierAllowedCharacters = CharacterSet(
+        charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-")
+    private static let environmentVariableFirstCharacters = CharacterSet(
+        charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_")
+    private static let environmentVariableAllowedCharacters = CharacterSet(
+        charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_")
+
+    /// 设置这些变量会破坏当前 shell 或用户环境，不允许作为版本环境变量
+    static let reservedEnvironmentVariables: Set<String> = [
+        "PATH", "HOME", "SHELL", "USER", "LOGNAME", "TMPDIR", "PWD", "OLDPWD",
+    ]
+
+    static func isValidIdentifier(_ identifier: String) -> Bool {
+        guard let first = identifier.unicodeScalars.first,
+            identifierFirstCharacters.contains(first)
+        else {
+            return false
+        }
+        return identifier.unicodeScalars.allSatisfy {
+            identifierAllowedCharacters.contains($0)
+        }
+    }
+
+    static func isValidEnvironmentVariableName(_ name: String) -> Bool {
+        guard let first = name.unicodeScalars.first,
+            environmentVariableFirstCharacters.contains(first)
+        else {
+            return false
+        }
+        return name.unicodeScalars.allSatisfy {
+            environmentVariableAllowedCharacters.contains($0)
+        }
+    }
+
+    static func isReservedEnvironmentVariable(_ name: String) -> Bool {
+        reservedEnvironmentVariables.contains(name.uppercased())
+    }
+
     /// 验证配置是否有效
     var isValid: Bool {
-        !name.isEmpty && !identifier.isEmpty && !scanPaths.isEmpty
+        validationErrors.isEmpty
     }
 
     /// 验证错误信息
     var validationErrors: [String] {
         var errors: [String] = []
-        if name.isEmpty {
-            errors.append("Name is required")
+
+        if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            errors.append(L(.customLanguageErrorNameRequired))
         }
+
         if identifier.isEmpty {
-            errors.append("Identifier is required")
+            errors.append(L(.customLanguageErrorIdentifierRequired))
+        } else if !Self.isValidIdentifier(identifier) {
+            errors.append(L(.customLanguageErrorIdentifierInvalid))
         }
+
         if scanPaths.isEmpty {
-            errors.append("At least one scan path is required")
+            errors.append(L(.customLanguageErrorScanPathRequired))
         }
+
+        if let rawName = envVarName {
+            let variableName = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !variableName.isEmpty {
+                if !Self.isValidEnvironmentVariableName(variableName) {
+                    errors.append(L(.customLanguageErrorEnvVarInvalid))
+                } else if Self.isReservedEnvironmentVariable(variableName) {
+                    errors.append(L(.customLanguageErrorEnvVarReserved))
+                }
+            }
+        }
+
         return errors
+    }
+}
+
+// MARK: - RuntimePilot Paths
+
+enum RuntimePilotPaths {
+    /// 所有语言 *_env.sh 的生成目录
+    static var environmentConfigDirectory: URL {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".config")
+            .appendingPathComponent("switchyourfuckinglanguageversion")
     }
 }
 
@@ -138,36 +232,6 @@ extension Color {
 enum IconType: String, Codable {
     case systemSymbol  // SF Symbol
     case customImage  // 自定义图片
-}
-
-// MARK: - Extended Language Metadata
-
-extension LanguageMetadata {
-    /// 是否为自定义语言
-    private static var customFlagKey = "isCustom"
-    private static var iconTypeKey = "iconType"
-
-    init(
-        id: String,
-        displayName: String,
-        iconName: String,
-        color: Color,
-        configFileName: String,
-        order: Int = 0,
-        isCustom: Bool = false,
-        iconType: IconType = .customImage
-    ) {
-        self.init(
-            id: id,
-            displayName: displayName,
-            iconName: iconName,
-            color: color,
-            configFileName: configFileName,
-            order: order
-        )
-        // 注意: 由于 LanguageMetadata 是 struct，我们无法在这里存储额外属性
-        // isCustom 和 iconType 将通过 CustomLanguageManager 来追踪
-    }
 }
 
 // MARK: - Preset Language Templates
@@ -277,7 +341,9 @@ enum LanguageTemplate: String, CaseIterable, Identifiable {
                 scanPaths: [
                     "~/.rustup/toolchains"
                 ],
-                envVarName: "RUSTUP_HOME",
+                // rustup 的 RUSTUP_HOME 指向的是 rustup 自身数据目录，不是单个 toolchain。
+                // 这里只把 toolchain 的 bin 目录加到 PATH，避免破坏 rustup。
+                envVarName: nil,
                 order: 101,
                 iconType: .customImage
             )
@@ -307,7 +373,8 @@ enum LanguageTemplate: String, CaseIterable, Identifiable {
                 ],
                 envVarName: "DOTNET_ROOT",
                 order: 103,
-                iconType: .customImage
+                iconType: .customImage,
+                pathSuffix: ""
             )
         case .flutter:
             return CustomLanguageConfig(

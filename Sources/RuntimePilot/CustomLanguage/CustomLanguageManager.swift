@@ -29,12 +29,31 @@ final class CustomLanguageManager: ObservableObject {
         }
 
         do {
-            let configs = try JSONDecoder().decode([CustomLanguageConfig].self, from: data)
+            var configs = try JSONDecoder().decode([CustomLanguageConfig].self, from: data)
+
+            // 旧版 Rust 模板把 RUSTUP_HOME 指向单个 toolchain，会破坏 rustup。
+            // 迁移为仅通过 PATH 选择 toolchain。
+            var needsSave = false
+            for index in configs.indices {
+                if configs[index].envVarName == "RUSTUP_HOME",
+                    configs[index].scanPaths.contains(where: {
+                        $0.lowercased().contains(".rustup/toolchains")
+                    })
+                {
+                    configs[index].envVarName = nil
+                    needsSave = true
+                }
+            }
+
             self.customLanguages = configs.sorted { $0.order < $1.order }
 
             // 为每个配置创建版本管理器
             for config in customLanguages {
                 createVersionManager(for: config)
+            }
+
+            if needsSave {
+                saveToUserDefaults()
             }
         } catch {
             print("Failed to load custom languages: \(error)")
@@ -75,8 +94,19 @@ final class CustomLanguageManager: ObservableObject {
             return
         }
 
-        let oldIdentifier = customLanguages[index].identifier
+        let oldConfig = customLanguages[index]
+        let oldIdentifier = oldConfig.identifier
         customLanguages[index] = config
+
+        // 如果 identifier / 脚本文件名变了，清理旧脚本和旧的 ActiveVersion 记录
+        if oldConfig.identifier != config.identifier
+            || oldConfig.generatedConfigFileName != config.generatedConfigFileName
+        {
+            removeGeneratedEnvironmentScript(for: oldConfig)
+        }
+        if oldIdentifier != config.identifier {
+            removePersistedActiveVersion(for: oldIdentifier)
+        }
 
         // 如果 identifier 变了，需要更新版本管理器的键
         if oldIdentifier != config.identifier {
@@ -91,16 +121,33 @@ final class CustomLanguageManager: ObservableObject {
         saveToUserDefaults()
     }
 
-    /// 删除语言
+    /// 删除语言，并清理它生成的环境脚本和持久化状态
     func deleteLanguage(id: UUID) {
         guard let index = customLanguages.firstIndex(where: { $0.id == id }) else {
             return
         }
 
         let config = customLanguages[index]
+        removeGeneratedEnvironmentScript(for: config)
+        removePersistedActiveVersion(for: config.identifier)
         versionManagers.removeValue(forKey: config.identifier)
         customLanguages.remove(at: index)
         saveToUserDefaults()
+    }
+
+    // MARK: - Cleanup
+
+    private func removeGeneratedEnvironmentScript(for config: CustomLanguageConfig) {
+        let scriptURL = config.generatedEnvironmentScriptURL.standardizedFileURL
+        let baseURL = RuntimePilotPaths.environmentConfigDirectory.standardizedFileURL
+        guard scriptURL.path.hasPrefix(baseURL.path + "/") else {
+            return
+        }
+        try? FileManager.default.removeItem(at: scriptURL)
+    }
+
+    private func removePersistedActiveVersion(for identifier: String) {
+        UserDefaults.standard.removeObject(forKey: "ActiveVersion_\(identifier)")
     }
 
     /// 根据 ID 获取配置

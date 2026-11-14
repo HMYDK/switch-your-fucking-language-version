@@ -8,20 +8,20 @@ on:
 jobs:
   build:
     runs-on: macos-14
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Setup Xcode
       uses: maxim-lobanov/setup-xcode@v1
       with:
         xcode-version: latest-stable
-    
+
     - name: Get version from tag
       id: get_version
       run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-    
+
     - name: Verify version matches Info.plist
       run: |
         PLIST_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Info.plist)
@@ -31,10 +31,10 @@ jobs:
           exit 1
         fi
         echo "Version verified: $PLIST_VERSION"
-    
+
     - name: Build release
       run: swift build -c release
-    
+
     - name: Create app bundle
       run: |
         APP_NAME="RuntimePilot"
@@ -44,22 +44,26 @@ jobs:
         CONTENTS_DIR="$APP_BUNDLE/Contents"
         MACOS_DIR="$CONTENTS_DIR/MacOS"
         RESOURCES_DIR="$CONTENTS_DIR/Resources"
-        
+
         # Create directories
         mkdir -p "$MACOS_DIR"
         mkdir -p "$RESOURCES_DIR"
-        
+
         # Copy executable
         cp "$BUILD_DIR/$APP_NAME" "$MACOS_DIR/"
-        
+
         # Copy Info.plist
         cp "Info.plist" "$CONTENTS_DIR/"
-        
+
         # Copy resources
         cp Sources/RuntimePilot/Resources/*.png "$RESOURCES_DIR/" 2>/dev/null || true
-        
+
+        # SwiftPM resources live in RuntimePilot_RuntimePilot.bundle; Bundle.module expects
+        # it at the .app root. Without it the distributed app crashes on first icon render.
+        cp -R "$BUILD_DIR/${APP_NAME}_${APP_NAME}.bundle" "$APP_BUNDLE/"
+
         echo "App bundle created: $APP_BUNDLE"
-    
+
     - name: Create DMG
       run: |
         APP_NAME="RuntimePilot"
@@ -68,17 +72,17 @@ jobs:
         APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
         DMG_NAME="$APP_NAME-$VERSION.dmg"
         DMG_TEMP="$BUILD_DIR/dmg_temp"
-        
+
         rm -rf "$DMG_TEMP"
         mkdir -p "$DMG_TEMP"
         cp -R "$APP_BUNDLE" "$DMG_TEMP/"
         ln -s /Applications "$DMG_TEMP/Applications"
-        
+
         hdiutil create -volname "$APP_NAME" -srcfolder "$DMG_TEMP" -ov -format UDZO "$DMG_NAME"
-        
+
         echo "DMG created: $DMG_NAME"
         echo "DMG_PATH=$DMG_NAME" >> $GITHUB_ENV
-    
+
     - name: Create ZIP
       run: |
         APP_NAME="RuntimePilot"
@@ -86,19 +90,19 @@ jobs:
         BUILD_DIR=".build/release"
         APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
         ZIP_NAME="$APP_NAME-$VERSION.zip"
-        
+
         cd "$BUILD_DIR"
         zip -r "../../$ZIP_NAME" "$APP_NAME.app"
         cd ../..
-        
+
         echo "ZIP created: $ZIP_NAME"
         echo "ZIP_PATH=$ZIP_NAME" >> $GITHUB_ENV
-    
+
     - name: Generate Release Notes
       id: release_notes
       run: |
         VERSION="${{ steps.get_version.outputs.VERSION }}"
-        
+
         # Try to extract notes from CHANGELOG.md
         if [ -f "CHANGELOG.md" ]; then
           # Extract content between current version and next version header
@@ -113,7 +117,7 @@ jobs:
         else
           echo "NOTES=Release version $VERSION" >> $GITHUB_OUTPUT
         fi
-    
+
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:

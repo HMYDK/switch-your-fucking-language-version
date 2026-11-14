@@ -15,19 +15,29 @@ struct CustomLanguageEditorView: View {
 
     private let isEditing: Bool
     private let onSave: ((CustomLanguageConfig) -> Void)?
+    private let onDelete: ((CustomLanguageConfig) -> Void)?
 
     // 创建新语言
-    init(onSave: ((CustomLanguageConfig) -> Void)? = nil) {
+    init(
+        onSave: ((CustomLanguageConfig) -> Void)? = nil,
+        onDelete: ((CustomLanguageConfig) -> Void)? = nil
+    ) {
         self._config = State(initialValue: CustomLanguageConfig())
         self.isEditing = false
         self.onSave = onSave
+        self.onDelete = onDelete
     }
 
     // 编辑现有语言
-    init(config: CustomLanguageConfig, onSave: ((CustomLanguageConfig) -> Void)? = nil) {
+    init(
+        config: CustomLanguageConfig,
+        onSave: ((CustomLanguageConfig) -> Void)? = nil,
+        onDelete: ((CustomLanguageConfig) -> Void)? = nil
+    ) {
         self._config = State(initialValue: config)
         self.isEditing = true
         self.onSave = onSave
+        self.onDelete = onDelete
     }
 
     var body: some View {
@@ -104,10 +114,11 @@ struct CustomLanguageEditorView: View {
             TextField(L(.customLanguageNamePlaceholder), text: $config.name)
                 .textFieldStyle(.roundedBorder)
                 .onChange(of: config.name) { newValue in
-                    // 自动生成 identifier
-                    if !isEditing && config.identifier.isEmpty
-                        || config.identifier
-                            == generateIdentifier(from: String(config.name.dropLast()))
+                    // 自动生成 identifier；只有新建语言时才允许自动更新
+                    if !isEditing
+                        && (config.identifier.isEmpty
+                            || config.identifier
+                                == generateIdentifier(from: String(config.name.dropLast())))
                     {
                         config.identifier = generateIdentifier(from: newValue)
                     }
@@ -124,7 +135,7 @@ struct CustomLanguageEditorView: View {
                 .foregroundColor(isEditing ? .secondary : .primary)
 
             if isEditing {
-                Text("Identifier cannot be changed after creation")
+                Text(L(.customLanguageIdentifierLocked))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -156,7 +167,7 @@ struct CustomLanguageEditorView: View {
                 }
 
                 Button(action: { showingIconPicker = true }) {
-                    Text("Choose Icon...")
+                    Text(L(.customLanguageChooseIcon))
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
@@ -208,7 +219,7 @@ struct CustomLanguageEditorView: View {
 
             // 路径列表
             if config.scanPaths.isEmpty {
-                Text("No paths configured")
+                Text(L(.customLanguageNoPaths))
                     .foregroundColor(.secondary)
                     .font(.caption)
                     .padding(.vertical, DMSpace.s)
@@ -239,7 +250,7 @@ struct CustomLanguageEditorView: View {
 
             // 添加新路径
             HStack {
-                TextField("~/path/to/versions", text: $newPath)
+                TextField(L(.scanPathPlaceholder), text: $newPath)
                     .textFieldStyle(.roundedBorder)
 
                 Button(action: selectFolder) {
@@ -252,17 +263,21 @@ struct CustomLanguageEditorView: View {
                     .disabled(newPath.isEmpty)
             }
 
-            // 预设模板
-            DisclosureGroup("Quick Add Templates") {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: DMSpace.s) {
-                    ForEach(LanguageTemplate.allCases) { template in
-                        Button(action: { applyTemplate(template) }) {
-                            Text(template.displayName)
-                                .frame(maxWidth: .infinity)
+            // 预设模板只用于新建语言。编辑时套用模板会覆盖 identifier，
+            // 与界面上“Identifier cannot be changed”的承诺冲突。
+            if !isEditing {
+                DisclosureGroup(L(.customLanguageQuickAddTemplates)) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: DMSpace.s) {
+                        ForEach(LanguageTemplate.allCases) { template in
+                            Button(action: { applyTemplate(template) }) {
+                                Text(template.displayName)
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(
+                                customLanguageManager.isIdentifierExists(
+                                    template.config.identifier))
                         }
-                        .buttonStyle(.bordered)
-                        .disabled(
-                            customLanguageManager.isIdentifierExists(template.config.identifier))
                     }
                 }
             }
@@ -272,7 +287,7 @@ struct CustomLanguageEditorView: View {
     // MARK: - Advanced Section
 
     private var advancedSection: some View {
-        DisclosureGroup("Advanced Options") {
+        DisclosureGroup(L(.customLanguageAdvancedOptions)) {
             VStack(alignment: .leading, spacing: DMSpace.m) {
                 Text(L(.customLanguageEnvVar))
                     .font(.subheadline)
@@ -287,9 +302,7 @@ struct CustomLanguageEditorView: View {
                 )
                 .textFieldStyle(.roundedBorder)
 
-                Text(
-                    "The environment variable that will be set to point to the active version path."
-                )
+                Text(L(.customLanguageEnvVarDescription))
                 .font(.caption)
                 .foregroundColor(.secondary)
             }
@@ -322,10 +335,10 @@ struct CustomLanguageEditorView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(config.name.isEmpty ? "Language Name" : config.name)
+                    Text(config.name.isEmpty ? L(.customLanguageNameFallback) : config.name)
                         .font(.system(size: 13, weight: .medium))
 
-                    Text("\(config.scanPaths.count) scan path(s)")
+                    Text(L(.customLanguageScanPathCount, config.scanPaths.count))
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
                 }
@@ -352,7 +365,7 @@ struct CustomLanguageEditorView: View {
 
             Spacer()
 
-            if let error = validationError {
+            if !config.isValid, let error = validationError ?? config.validationErrors.first {
                 Text(error)
                     .font(.caption)
                     .foregroundColor(.red)
@@ -402,7 +415,7 @@ struct CustomLanguageEditorView: View {
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = false
-        panel.message = "Select a directory to scan for versions"
+        panel.message = L(.scanPathSelectFolder)
 
         if panel.runModal() == .OK, let url = panel.url {
             let path = url.path
@@ -421,6 +434,7 @@ struct CustomLanguageEditorView: View {
         config.scanPaths = templateConfig.scanPaths
         config.envVarName = templateConfig.envVarName
         config.iconType = templateConfig.iconType
+        config.pathSuffix = templateConfig.pathSuffix
     }
 
     private func save() {
@@ -448,7 +462,11 @@ struct CustomLanguageEditorView: View {
     }
 
     private func deleteAndDismiss() {
-        customLanguageManager.deleteLanguage(id: config.id)
+        if let onDelete = onDelete {
+            onDelete(config)
+        } else {
+            customLanguageManager.deleteLanguage(id: config.id)
+        }
         dismiss()
     }
 }
@@ -495,7 +513,7 @@ struct SFSymbolPickerView: View {
             HStack {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
-                TextField("Search symbols...", text: $searchText)
+                TextField(L(.customLanguageSearchSymbols), text: $searchText)
                     .textFieldStyle(.plain)
             }
             .padding(DMSpace.m)

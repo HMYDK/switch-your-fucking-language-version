@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-14
+
+### Fixed
+- Packaged app now includes SwiftPM resource bundle, preventing launch crashes on other Macs
+- Replaced 100ms polling with event-driven manager updates and removed per-render wrapper recreation
+- Do not mark a version as active until it has been explicitly selected and its env script was written
+- Show a failure alert when switching versions fails instead of always reporting success
+- Corrected Flutter, .NET, Rust and Go (asdf) version detection and PATH/env generation
+- Migrated old Rust configs away from the invalid RUSTUP_HOME usage
+- Fixed background-thread SwiftUI publishing in scan path status checks
+- Deleting a language now updates the registry, removes its env script and persisted active version
+- Custom SF Symbol icons now render in Dashboard and language detail views
+- Validate identifiers and environment variable names; escape paths written to shell scripts
+- Use security-scoped bookmarks on the authorized root directory
+- Updated README config directory and added signing/notarization notes
+
 ## [0.0.2] - 2026-01-11
 
 ### Added

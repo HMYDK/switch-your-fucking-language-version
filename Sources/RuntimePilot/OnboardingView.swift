@@ -13,6 +13,7 @@ struct OnboardingView: View {
     @Binding var isPresented: Bool
     var registry: LanguageRegistry
 
+    @ObservedObject private var localization = LocalizationManager.shared
     @ObservedObject private var customLanguageManager = CustomLanguageManager.shared
     @State private var currentStep: OnboardingStep = .selectLanguages
     @State private var selectedTemplates: Set<LanguageTemplate> = LanguageTemplate.recommended
@@ -300,7 +301,10 @@ struct LanguageTemplateCard: View {
                         )
                         .frame(width: 48, height: 48)
 
-                    LanguageIconView(imageName: template.config.iconSymbol, size: 28)
+                    LanguageIconView(
+                        imageName: template.config.iconSymbol,
+                        iconType: template.config.iconType,
+                        size: 28)
                 }
 
                 // Name

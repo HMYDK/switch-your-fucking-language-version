@@ -69,7 +69,26 @@ fi
 # 复制资源文件
 cp Sources/RuntimePilot/Resources/*.png "$RESOURCES_DIR/" 2>/dev/null || true
 
+# SwiftPM 会生成 RuntimePilot_RuntimePilot.bundle；Bundle.module 从 .app 根目录查找它。
+# 如果这里漏掉，打包后的 App 在别的机器上会因为找不到资源包而崩溃。
+SPM_BUNDLE="$BUILD_DIR/${APP_NAME}_${APP_NAME}.bundle"
+if [ -d "$SPM_BUNDLE" ]; then
+    cp -R "$SPM_BUNDLE" "$APP_BUNDLE/"
+else
+    echo "⚠️  SwiftPM resource bundle not found: $SPM_BUNDLE"
+fi
+
 echo "✅ App bundle created: $APP_BUNDLE"
+
+# 可选签名/公证：本地开发默认不签；发布时设置 CODESIGN_IDENTITY，
+# 如需公证再设置 NOTARY_PROFILE（notarytool 的 keychain profile 名称）。
+if [ -n "${CODESIGN_IDENTITY:-}" ]; then
+    echo "🔐 Signing app with identity: $CODESIGN_IDENTITY..."
+    codesign --force --deep --options runtime --timestamp --sign "$CODESIGN_IDENTITY" "$APP_BUNDLE"
+    codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
+else
+    echo "ℹ️  CODESIGN_IDENTITY not set; app is unsigned (fine for local use, not for distribution)."
+fi
 
 echo "💿 Creating DMG..."
 DMG_NAME="$APP_NAME-$VERSION.dmg"
@@ -85,6 +104,13 @@ ln -s /Applications "$DMG_TEMP/Applications"
 # 生成 DMG
 rm -f "$DMG_NAME"
 hdiutil create -volname "$APP_NAME" -srcfolder "$DMG_TEMP" -ov -format UDZO "$DMG_NAME"
+
+# 可选公证
+if [ -n "${NOTARY_PROFILE:-}" ]; then
+    echo "📝 Notarizing DMG with profile: $NOTARY_PROFILE..."
+    xcrun notarytool submit "$DMG_NAME" --keychain-profile "$NOTARY_PROFILE" --wait
+    xcrun stapler staple "$DMG_NAME"
+fi
 
 rm -rf "$DMG_TEMP"
 

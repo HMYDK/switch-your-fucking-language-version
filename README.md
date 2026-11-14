@@ -31,7 +31,7 @@ SYFLV 通过 **生成环境脚本** 的方式来管理语言版本，而非直�
 │     点击 "Use" 激活某个版本                                      │
 │     ↓                                                           │
 │  4. 生成脚本                                                     │
-│     写入 ~/.config/runtimepilot/{language}_env.sh               │
+│     写入 ~/.config/switchyourfuckinglanguageversion/{language}_env.sh               │
 │     内容: export JAVA_HOME="/path/to/jdk"                       │
 │     ↓                                                           │
 │  5. Shell 生效                                                   │
@@ -93,7 +93,7 @@ SYFLV 通过 **生成环境脚本** 的方式来管理语言版本，而非直�
 
 ### 🐚 Shell 集成
 - RuntimePilot **不直接修改**你的 Shell 配置文件
-- 为每种语言生成小型 `*_env.sh` 脚本，存放于 `~/.config/runtimepilot/`
+- 为每种语言生成小型 `*_env.sh` 脚本，存放于 `~/.config/switchyourfuckinglanguageversion/`
 - 只需在 Shell 配置中 source 这些文件一次，应用切换版本时会自动更新它们
 
 ### ⚙️ 设置
@@ -126,7 +126,18 @@ swift run
 
 构建完成后：
 - App 包：`.build/release/RuntimePilot.app`
-- DMG 镜像：`RuntimePilot-0.0.1.dmg`
+- DMG 镜像：`RuntimePilot-1.0.0.dmg`
+
+> 发布给其他用户时，macOS Gatekeeper 要求 App 使用 Developer ID 签名并公证。
+> 可以在构建时传入签名身份和公证 profile：
+>
+> ```bash
+> CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
+> NOTARY_PROFILE="your-notarytool-profile" \
+> ./build-app.sh
+> ```
+>
+> 不设置时仍可本地运行，但下载后的 DMG 会被 Gatekeeper 拦截。
 
 ## ⚙️ Shell 配置（一次性设置）
 
@@ -134,7 +145,7 @@ swift run
 
 ```bash
 # RuntimePilot - Development Environment Manager
-for env_file in ~/.config/runtimepilot/*_env.sh; do
+for env_file in ~/.config/switchyourfuckinglanguageversion/*_env.sh; do
     [ -f "$env_file" ] && source "$env_file"
 done
 ```
@@ -143,16 +154,16 @@ done
 
 ```bash
 # Java
-[ -f ~/.config/runtimepilot/java_env.sh ] && source ~/.config/runtimepilot/java_env.sh
+[ -f ~/.config/switchyourfuckinglanguageversion/java_env.sh ] && source ~/.config/switchyourfuckinglanguageversion/java_env.sh
 
 # Node.js
-[ -f ~/.config/runtimepilot/node_env.sh ] && source ~/.config/runtimepilot/node_env.sh
+[ -f ~/.config/switchyourfuckinglanguageversion/node_env.sh ] && source ~/.config/switchyourfuckinglanguageversion/node_env.sh
 
 # Python
-[ -f ~/.config/runtimepilot/python_env.sh ] && source ~/.config/runtimepilot/python_env.sh
+[ -f ~/.config/switchyourfuckinglanguageversion/python_env.sh ] && source ~/.config/switchyourfuckinglanguageversion/python_env.sh
 
 # Go
-[ -f ~/.config/runtimepilot/go_env.sh ] && source ~/.config/runtimepilot/go_env.sh
+[ -f ~/.config/switchyourfuckinglanguageversion/go_env.sh ] && source ~/.config/switchyourfuckinglanguageversion/go_env.sh
 ```
 
 然后重新加载 Shell：
@@ -162,6 +173,9 @@ source ~/.zshrc
 ```
 
 或者打开一个新的终端窗口。
+
+> 注意：旧版本使用 `~/.config/runtimepilot/`。如果你之前配置过旧目录，请在 Shell 配置中改成
+> `~/.config/switchyourfuckinglanguageversion/`，否则新切换的版本不会生效。
 
 之后，每当你在 RuntimePilot 中点击 **Use** 切换版本，对应的 `*_env.sh` 文件就会更新，新的 Shell 会话将使用选定的版本。
 

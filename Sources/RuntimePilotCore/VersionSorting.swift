@@ -1,6 +1,6 @@
 import Foundation
 
-func compareVersionDescending(_ lhs: String, _ rhs: String) -> Bool {
+public func compareVersionDescending(_ lhs: String, _ rhs: String) -> Bool {
     let l = versionKey(lhs)
     let r = versionKey(rhs)
     let maxCount = max(l.count, r.count)

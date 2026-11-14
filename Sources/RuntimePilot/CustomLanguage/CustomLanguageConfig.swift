@@ -1,4 +1,5 @@
 import Foundation
+import RuntimePilotCore
 import SwiftUI
 
 // MARK: - Custom Language Config
@@ -103,81 +104,38 @@ struct CustomLanguageConfig: Codable, Identifiable, Equatable {
 
     // MARK: - Validation
 
-    private static let identifierFirstCharacters = CharacterSet(
-        charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-    private static let identifierAllowedCharacters = CharacterSet(
-        charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-")
-    private static let environmentVariableFirstCharacters = CharacterSet(
-        charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_")
-    private static let environmentVariableAllowedCharacters = CharacterSet(
-        charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_")
-
-    /// 设置这些变量会破坏当前 shell 或用户环境，不允许作为版本环境变量
-    static let reservedEnvironmentVariables: Set<String> = [
-        "PATH", "HOME", "SHELL", "USER", "LOGNAME", "TMPDIR", "PWD", "OLDPWD",
-    ]
-
-    static func isValidIdentifier(_ identifier: String) -> Bool {
-        guard let first = identifier.unicodeScalars.first,
-            identifierFirstCharacters.contains(first)
-        else {
-            return false
-        }
-        return identifier.unicodeScalars.allSatisfy {
-            identifierAllowedCharacters.contains($0)
-        }
-    }
-
-    static func isValidEnvironmentVariableName(_ name: String) -> Bool {
-        guard let first = name.unicodeScalars.first,
-            environmentVariableFirstCharacters.contains(first)
-        else {
-            return false
-        }
-        return name.unicodeScalars.allSatisfy {
-            environmentVariableAllowedCharacters.contains($0)
-        }
-    }
-
-    static func isReservedEnvironmentVariable(_ name: String) -> Bool {
-        reservedEnvironmentVariables.contains(name.uppercased())
+    private var validationIssues: [LanguageConfigValidation.Issue] {
+        LanguageConfigValidation.validate(
+            name: name,
+            identifier: identifier,
+            scanPaths: scanPaths,
+            envVarName: envVarName
+        )
     }
 
     /// 验证配置是否有效
     var isValid: Bool {
-        validationErrors.isEmpty
+        validationIssues.isEmpty
     }
 
     /// 验证错误信息
     var validationErrors: [String] {
-        var errors: [String] = []
-
-        if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors.append(L(.customLanguageErrorNameRequired))
-        }
-
-        if identifier.isEmpty {
-            errors.append(L(.customLanguageErrorIdentifierRequired))
-        } else if !Self.isValidIdentifier(identifier) {
-            errors.append(L(.customLanguageErrorIdentifierInvalid))
-        }
-
-        if scanPaths.isEmpty {
-            errors.append(L(.customLanguageErrorScanPathRequired))
-        }
-
-        if let rawName = envVarName {
-            let variableName = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !variableName.isEmpty {
-                if !Self.isValidEnvironmentVariableName(variableName) {
-                    errors.append(L(.customLanguageErrorEnvVarInvalid))
-                } else if Self.isReservedEnvironmentVariable(variableName) {
-                    errors.append(L(.customLanguageErrorEnvVarReserved))
-                }
+        validationIssues.map { issue in
+            switch issue {
+            case .nameRequired:
+                return L(.customLanguageErrorNameRequired)
+            case .identifierRequired:
+                return L(.customLanguageErrorIdentifierRequired)
+            case .identifierInvalid:
+                return L(.customLanguageErrorIdentifierInvalid)
+            case .scanPathRequired:
+                return L(.customLanguageErrorScanPathRequired)
+            case .environmentVariableInvalid:
+                return L(.customLanguageErrorEnvVarInvalid)
+            case .environmentVariableReserved:
+                return L(.customLanguageErrorEnvVarReserved)
             }
         }
-
-        return errors
     }
 }
 

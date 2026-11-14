@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Core test runner `RuntimePilotChecks` covering version parsing/sorting, script generation, config validation and migration rules
+- GitHub Actions workflow to run core checks on pushes and pull requests
+
 ## [1.0.0] - 2026-11-14
 
 ### Fixed

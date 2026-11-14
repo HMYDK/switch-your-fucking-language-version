@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import RuntimePilotCore
 import SwiftUI
 
 // MARK: - Custom Language Manager
@@ -35,12 +36,12 @@ final class CustomLanguageManager: ObservableObject {
             // 迁移为仅通过 PATH 选择 toolchain。
             var needsSave = false
             for index in configs.indices {
-                if configs[index].envVarName == "RUSTUP_HOME",
-                    configs[index].scanPaths.contains(where: {
-                        $0.lowercased().contains(".rustup/toolchains")
-                    })
-                {
-                    configs[index].envVarName = nil
+                let migrated = LanguageConfigMigration.migratedRustEnvironmentVariable(
+                    currentEnvironmentVariable: configs[index].envVarName,
+                    scanPaths: configs[index].scanPaths
+                )
+                if migrated != configs[index].envVarName {
+                    configs[index].envVarName = migrated
                     needsSave = true
                 }
             }

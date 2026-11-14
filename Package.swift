@@ -7,15 +7,26 @@ let package = Package(
         .macOS(.v13)
     ],
     products: [
-        .executable(name: "RuntimePilot", targets: ["RuntimePilot"])
+        .executable(name: "RuntimePilot", targets: ["RuntimePilot"]),
+        .library(name: "RuntimePilotCore", targets: ["RuntimePilotCore"]),
     ],
     targets: [
+        .target(
+            name: "RuntimePilotCore",
+            path: "Sources/RuntimePilotCore"
+        ),
         .executableTarget(
             name: "RuntimePilot",
+            dependencies: ["RuntimePilotCore"],
             path: "Sources/RuntimePilot",
             resources: [
                 .process("Resources")
             ]
-        )
+        ),
+        .executableTarget(
+            name: "RuntimePilotChecks",
+            dependencies: ["RuntimePilotCore"],
+            path: "Tests/RuntimePilotChecks"
+        ),
     ]
 )

@@ -128,6 +128,18 @@ swift run
 - App 包：`.build/release/RuntimePilot.app`
 - DMG 镜像：`RuntimePilot-1.0.0.dmg`
 
+### 自动化测试
+
+```bash
+# 运行 core 校验（版本解析、脚本生成、配置校验等）
+./Scripts/run-tests.sh
+# 或
+swift run RuntimePilotChecks
+```
+
+> 当前环境没有 XCTest/Testing 模块，因此测试使用一个轻量的自包含 runner；
+> GitHub Actions 的 `.github/workflows/tests.yml` 会在 push/PR 时运行同一组检查。
+
 > 发布给其他用户时，macOS Gatekeeper 要求 App 使用 Developer ID 签名并公证。
 > 可以在构建时传入签名身份和公证 profile：
 >
@@ -212,13 +224,24 @@ RuntimePilot/
 │   │   └── LocalizedStrings.swift      # 本地化字符串定义
 │   │
 │   ├── BrewScanner.swift           # Homebrew 版本扫描
-│   ├── VersionSorting.swift        # 版本号排序工具
 │   │
 │   ├── DirectoryAccessManager.swift# 目录访问权限管理
 │   │
 │   ├── DMTheme.swift               # Design System（间距、圆角、排版）
 │   ├── SharedViews.swift           # 共享 UI 组件
 │   └── Resources/                  # 语言图标资源
+│
+├── Sources/RuntimePilotCore/       # 可单测的纯逻辑（无 SwiftUI 依赖）
+│   ├── VersionSorting.swift        # 版本号排序
+│   ├── VersionParsing.swift        # 版本号/Flutter/Rust/Homebrew 解析
+│   ├── EnvironmentScript.swift     # shell 脚本生成与转义
+│   ├── LanguageConfigValidation.swift  # 配置校验规则
+│   ├── LanguageConfigMigration.swift   # 旧配置迁移
+│   └── RuntimePathResolution.swift # .NET 等运行时的根目录解析
+│
+├── Tests/RuntimePilotChecks/       # 自包含 core 校验 runner
+│   └── main.swift
+├── Scripts/run-tests.sh            # 运行自动化校验
 │
 ├── Package.swift                   # Swift Package 配置
 ├── Info.plist                      # 应用信息

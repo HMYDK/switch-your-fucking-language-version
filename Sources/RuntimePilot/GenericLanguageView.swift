@@ -1,4 +1,5 @@
 import AppKit
+import RuntimePilotCore
 import SwiftUI
 
 struct GenericLanguageView: View {

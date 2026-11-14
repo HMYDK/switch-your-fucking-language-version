@@ -58,7 +58,7 @@ struct LanguageIconView: View {
                 Image(systemName: imageName)
                     .font(.system(size: size * 0.8, weight: .semibold))
                     .frame(width: size, height: size)
-            } else if let url = Bundle.module.url(forResource: imageName, withExtension: "png"),
+            } else if let url = AppResources.url(forResource: imageName, withExtension: "png"),
                 let nsImage = NSImage(contentsOf: url)
             {
                 Image(nsImage: nsImage)

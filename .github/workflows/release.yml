@@ -53,14 +53,27 @@ jobs:
         # Copy Info.plist
         cp "Info.plist" "$CONTENTS_DIR/"
 
-        # Copy resources
+        # Copy resources into the standard Contents/Resources directory.
+        # Do not put the SwiftPM bundle at the .app root: that makes the bundle
+        # non-signable and macOS reports the app as damaged.
         cp Sources/RuntimePilot/Resources/*.png "$RESOURCES_DIR/" 2>/dev/null || true
 
-        # SwiftPM resources live in RuntimePilot_RuntimePilot.bundle; Bundle.module expects
-        # it at the .app root. Without it the distributed app crashes on first icon render.
-        cp -R "$BUILD_DIR/${APP_NAME}_${APP_NAME}.bundle" "$APP_BUNDLE/"
-
         echo "App bundle created: $APP_BUNDLE"
+
+    - name: Sign app
+      run: |
+        APP_BUNDLE=".build/release/RuntimePilot.app"
+
+        if [ -n "${DEVELOPER_ID_APPLICATION:-}" ]; then
+          codesign --force --deep --options runtime --timestamp --sign "$DEVELOPER_ID_APPLICATION" "$APP_BUNDLE"
+        else
+          echo "No Developer ID secret; using ad-hoc signature (no Apple Developer account required)."
+          codesign --force --deep --sign - "$APP_BUNDLE"
+        fi
+
+        codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
+      env:
+        DEVELOPER_ID_APPLICATION: ${{ secrets.DEVELOPER_ID_APPLICATION }}
 
     - name: Create DMG
       run: |

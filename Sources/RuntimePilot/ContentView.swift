@@ -389,7 +389,7 @@ private struct SidebarNavItem: View {
                                 Image(systemName: iconImage)
                                     .font(.system(size: 14, weight: .semibold))
                                     .foregroundStyle(isSelected ? color : .secondary)
-                            } else if let url = Bundle.module.url(
+                            } else if let url = AppResources.url(
                                 forResource: iconImage, withExtension: "png"),
                                 let nsImage = NSImage(contentsOf: url)
                             {

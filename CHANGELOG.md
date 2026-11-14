@@ -7,9 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-11-15
+
 ### Added
 - Core test runner `RuntimePilotChecks` covering version parsing/sorting, script generation, config validation and migration rules
 - GitHub Actions workflow to run core checks on pushes and pull requests
+
+### Fixed
+- Ad-hoc sign the assembled .app bundle so macOS no longer treats it as damaged because the linker signature and resources did not match
+- Load PNG resources from the standard Contents/Resources directory instead of placing a SwiftPM bundle at the .app root
+- Release workflow now signs the app before creating the DMG/ZIP
+
+### Installation
+- This build is ad-hoc signed; no Apple Developer account is required, but macOS Gatekeeper will still block a browser-downloaded build once.
+- If macOS says the app is damaged or cannot be verified, right-click Open, or run:
+  `sudo xattr -dr com.apple.quarantine /Applications/RuntimePilot.app`
+- If the Open Anyway button is shown in System Settings > Privacy & Security, using it is also sufficient.
 
 ## [1.0.0] - 2026-11-14
 

@@ -69,26 +69,18 @@ fi
 # 复制资源文件
 cp Sources/RuntimePilot/Resources/*.png "$RESOURCES_DIR/" 2>/dev/null || true
 
-# SwiftPM 会生成 RuntimePilot_RuntimePilot.bundle；Bundle.module 从 .app 根目录查找它。
-# 如果这里漏掉，打包后的 App 在别的机器上会因为找不到资源包而崩溃。
-SPM_BUNDLE="$BUILD_DIR/${APP_NAME}_${APP_NAME}.bundle"
-if [ -d "$SPM_BUNDLE" ]; then
-    cp -R "$SPM_BUNDLE" "$APP_BUNDLE/"
-else
-    echo "⚠️  SwiftPM resource bundle not found: $SPM_BUNDLE"
-fi
-
 echo "✅ App bundle created: $APP_BUNDLE"
 
-# 可选签名/公证：本地开发默认不签；发布时设置 CODESIGN_IDENTITY，
-# 如需公证再设置 NOTARY_PROFILE（notarytool 的 keychain profile 名称）。
+# 签名：有 Developer ID 时做正式签名；没有时至少做 ad-hoc 签名。
+# 未签名的组装 App bundle 会被 macOS 判定为“已损坏”（资源与签名不匹配）。
 if [ -n "${CODESIGN_IDENTITY:-}" ]; then
     echo "🔐 Signing app with identity: $CODESIGN_IDENTITY..."
     codesign --force --deep --options runtime --timestamp --sign "$CODESIGN_IDENTITY" "$APP_BUNDLE"
-    codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
 else
-    echo "ℹ️  CODESIGN_IDENTITY not set; app is unsigned (fine for local use, not for distribution)."
+    echo "ℹ️  CODESIGN_IDENTITY not set; applying ad-hoc signature (no Apple Developer required)."
+    codesign --force --deep --sign - "$APP_BUNDLE"
 fi
+codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
 
 echo "💿 Creating DMG..."
 DMG_NAME="$APP_NAME-$VERSION.dmg"

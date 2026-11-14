@@ -126,7 +126,7 @@ swift run
 
 构建完成后：
 - App 包：`.build/release/RuntimePilot.app`
-- DMG 镜像：`RuntimePilot-1.0.0.dmg`
+- DMG 镜像：`RuntimePilot-1.0.1.dmg`
 
 ### 自动化测试
 
@@ -140,16 +140,29 @@ swift run RuntimePilotChecks
 > 当前环境没有 XCTest/Testing 模块，因此测试使用一个轻量的自包含 runner；
 > GitHub Actions 的 `.github/workflows/tests.yml` 会在 push/PR 时运行同一组检查。
 
-> 发布给其他用户时，macOS Gatekeeper 要求 App 使用 Developer ID 签名并公证。
-> 可以在构建时传入签名身份和公证 profile：
->
-> ```bash
-> CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
-> NOTARY_PROFILE="your-notarytool-profile" \
-> ./build-app.sh
-> ```
->
-> 不设置时仍可本地运行，但下载后的 DMG 会被 Gatekeeper 拦截。
+### 发布与签名
+
+`build-app.sh` 在未设置 `CODESIGN_IDENTITY` 时会对 App 做 **ad-hoc 签名**，不需要 Apple Developer 账号；
+但浏览器下载的 App 仍会被 Gatekeeper 拦截一次。没有 Developer ID 时，可以：
+
+- 在弹窗中尝试「打开」，或到 **系统设置 → 隐私与安全性 → 仍要打开**；
+- 或者清除隔离属性：
+
+```bash
+sudo xattr -dr com.apple.quarantine /Applications/RuntimePilot.app
+open /Applications/RuntimePilot.app
+```
+
+如果有 Developer ID，可做正式签名/公证，用户即可双击打开：
+
+```bash
+CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
+NOTARY_PROFILE="your-notarytool-profile" \
+./build-app.sh
+```
+
+> 不注册 Apple Developer 无法做到「双击完全无提示」；这是 macOS Gatekeeper 的限制，
+> ad-hoc 签名只能消除「已损坏」错误并允许通过 Open Anyway / xattr 启动。
 
 ## ⚙️ Shell 配置（一次性设置）
 

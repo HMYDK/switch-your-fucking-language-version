@@ -8,7 +8,7 @@
 
 > 🤬 Tired of juggling multiple language versions? Just switch your fucking language version!
 
-**SYFLV** (aka RuntimePilot) 是一个原生 macOS 应用，为任意编程语言提供统一的运行时版本管理界面。  
+**SYFLV**（Switch Your Fucking Language Version） 是一个原生 macOS 应用，为任意编程语言提供统一的运行时版本管理界面。
 通过单一 UI 发现已安装的运行时，快速切换版本，并将选定的版本配置到你的 Shell 环境中。
 
 再也不用记那些该死的 `nvm use`、`pyenv global`、`jenv local` 了！
@@ -92,7 +92,7 @@ SYFLV 通过 **生成环境脚本** 的方式来管理语言版本，而非直�
 - 支持复制路径、在 Finder 中显示等上下文操作
 
 ### 🐚 Shell 集成
-- RuntimePilot **不直接修改**你的 Shell 配置文件
+- SYFLV **不直接修改**你的 Shell 配置文件
 - 为每种语言生成小型 `*_env.sh` 脚本，存放于 `~/.config/switchyourfuckinglanguageversion/`
 - 只需在 Shell 配置中 source 这些文件一次，应用切换版本时会自动更新它们
 
@@ -114,7 +114,7 @@ SYFLV 通过 **生成环境脚本** 的方式来管理语言版本，而非直�
 swift build
 
 # 运行
-swift run
+swift run SYFLV
 ```
 
 ### 生成应用包
@@ -125,18 +125,18 @@ swift run
 ```
 
 构建完成后：
-- App 包：`.build/release/RuntimePilot.app`
-- DMG 镜像：`RuntimePilot-1.0.1.dmg`
+- App 包：`.build/release/SYFLV.app`
+- DMG 镜像：`SYFLV-1.0.2.dmg`
 
 ### 首次启动：提示“无法验证开发者”
 
 从 GitHub Release 下载后，如果 macOS 提示：
 
-> “RuntimePilot”无法打开，因为无法验证开发者。
+> “SYFLV”无法打开，因为无法验证开发者。
 
 或者：
 
-> “RuntimePilot”已损坏，无法打开。
+> “SYFLV”已损坏，无法打开。
 
 这不是文件损坏。当前发布包使用 **ad-hoc 签名**（没有 Apple Developer 证书），所以 Gatekeeper 会在首次启动时拦截。
 
@@ -144,7 +144,7 @@ swift run
 
 1. 先双击一次 App，让提示出现；
 2. 打开 **系统设置 → 隐私与安全性**；
-3. 在“安全性”区域找到 `RuntimePilot`，点击 **仍要打开**；
+3. 在“安全性”区域找到 `SYFLV`，点击 **仍要打开**；
 4. 输入管理员密码后再次确认。
 
 > 如果没有看到“仍要打开”，或者提示是“已损坏”，请使用方法二。
@@ -154,31 +154,31 @@ swift run
 App 已安装到 `/Applications`：
 
 ```bash
-sudo xattr -dr com.apple.quarantine /Applications/RuntimePilot.app
-open /Applications/RuntimePilot.app
+sudo xattr -dr com.apple.quarantine /Applications/SYFLV.app
+open /Applications/SYFLV.app
 ```
 
 App 还在下载目录：
 
 ```bash
-xattr -dr com.apple.quarantine ~/Downloads/RuntimePilot.app
-open ~/Downloads/RuntimePilot.app
+xattr -dr com.apple.quarantine ~/Downloads/SYFLV.app
+open ~/Downloads/SYFLV.app
 ```
 
 如果还没从 DMG 里拖出来：
 
 ```bash
-xattr -dr com.apple.quarantine ~/Downloads/RuntimePilot-1.0.1.dmg
-open ~/Downloads/RuntimePilot-1.0.1.dmg
+xattr -dr com.apple.quarantine ~/Downloads/SYFLV-1.0.2.dmg
+open ~/Downloads/SYFLV-1.0.2.dmg
 ```
 
-然后把 `RuntimePilot.app` 拖到 `/Applications`，再执行第一条命令。
+然后把 `SYFLV.app` 拖到 `/Applications`，再执行第一条命令。
 
 **检查是否生效**
 
 ```bash
-xattr -p com.apple.quarantine /Applications/RuntimePilot.app
-codesign --verify --deep --strict --verbose=2 /Applications/RuntimePilot.app
+xattr -p com.apple.quarantine /Applications/SYFLV.app
+codesign --verify --deep --strict --verbose=2 /Applications/SYFLV.app
 ```
 
 第一条应提示 `No such xattr`，第二条应显示 `valid on disk`。
@@ -188,9 +188,9 @@ codesign --verify --deep --strict --verbose=2 /Applications/RuntimePilot.app
 确认下载的是 **v1.0.1**；然后在本地重新做一次 ad-hoc 签名：
 
 ```bash
-sudo codesign --force --deep --sign - /Applications/RuntimePilot.app
-sudo xattr -dr com.apple.quarantine /Applications/RuntimePilot.app
-open /Applications/RuntimePilot.app
+sudo codesign --force --deep --sign - /Applications/SYFLV.app
+sudo xattr -dr com.apple.quarantine /Applications/SYFLV.app
+open /Applications/SYFLV.app
 ```
 
 **注意**
@@ -232,7 +232,7 @@ NOTARY_PROFILE="your-notarytool-profile" \
 将以下内容添加到你的 Shell 配置文件（如 `~/.zshrc` 或 `~/.bash_profile`）：
 
 ```bash
-# RuntimePilot - Development Environment Manager
+# SYFLV - Development Environment Manager
 for env_file in ~/.config/switchyourfuckinglanguageversion/*_env.sh; do
     [ -f "$env_file" ] && source "$env_file"
 done
@@ -265,12 +265,12 @@ source ~/.zshrc
 > 注意：旧版本使用 `~/.config/runtimepilot/`。如果你之前配置过旧目录，请在 Shell 配置中改成
 > `~/.config/switchyourfuckinglanguageversion/`，否则新切换的版本不会生效。
 
-之后，每当你在 RuntimePilot 中点击 **Use** 切换版本，对应的 `*_env.sh` 文件就会更新，新的 Shell 会话将使用选定的版本。
+之后，每当你在 SYFLV 中点击 **Use** 切换版本，对应的 `*_env.sh` 文件就会更新，新的 Shell 会话将使用选定的版本。
 
 ## 🏗️ 项目结构
 
 ```
-RuntimePilot/
+SYFLV/
 ├── Sources/RuntimePilot/
 │   ├── RuntimePilotApp.swift       # 应用入口
 │   ├── ContentView.swift           # 主视图，NavigationSplitView 布局
@@ -324,6 +324,10 @@ RuntimePilot/
 ├── build-app.sh                    # 构建脚本
 └── README.md
 ```
+
+> 注：App 的 Bundle ID 仍保留为 `com.runtimepilot.app`，内部 SwiftPM target/module 也仍叫
+> `RuntimePilot` / `RuntimePilotCore`，这样升级时不会丢失已有的用户配置（自定义语言、语言设置、激活版本等）。
+> 用户可见的 App 文件、进程名、窗口标题和发布产物现在都是 SYFLV。
 
 ## 🎨 架构设计
 

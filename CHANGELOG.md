@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-11-15
+
+### Changed
+- Renamed the user-visible app bundle, executable, display name and release assets to SYFLV
+- Updated in-app welcome/onboarding/about text to SYFLV
+- Release files are now named SYFLV-1.0.2.dmg and SYFLV-1.0.2.zip
+
+### Notes
+- Bundle identifier remains `com.runtimepilot.app`, and internal SwiftPM targets remain
+  RuntimePilot/RuntimePilotCore, so existing custom languages and active version settings are preserved.
+- The app is still ad-hoc signed; see the README section for the one-time Gatekeeper step.
+
 ## [1.0.1] - 2026-11-15
 
 ### Added

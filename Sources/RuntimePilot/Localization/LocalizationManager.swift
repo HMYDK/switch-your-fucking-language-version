@@ -103,10 +103,10 @@ private let englishStrings: [String: String] = [
     "dashboard.active": "Active",
     "dashboard.installed": "Installed",
     "dashboard.languages": "Languages",
-    "dashboard.welcome": "Welcome to RuntimePilot",
+    "dashboard.welcome": "Welcome to SYFLV",
     "dashboard.setupSteps": "Set up in 3 steps",
     "dashboard.step1.title": "Grant Access",
-    "dashboard.step1.desc": "Allow RuntimePilot to scan version directories",
+    "dashboard.step1.desc": "Allow SYFLV to scan version directories",
     "dashboard.step2.title": "Scan Versions",
     "dashboard.step2.desc": "Automatically detect installed versions",
     "dashboard.step3.title": "Switch Versions",
@@ -183,9 +183,9 @@ private let englishStrings: [String: String] = [
     "shared.shellSetup": "Shell Setup",
 
     // Onboarding
-    "onboarding.welcome": "Welcome to RuntimePilot",
+    "onboarding.welcome": "Welcome to SYFLV",
     "onboarding.grantAccess": "Grant Access",
-    "onboarding.needsAccess": "RuntimePilot needs access to scan version directories:",
+    "onboarding.needsAccess": "SYFLV needs access to scan version directories:",
     "onboarding.skipForNow": "Skip for Now",
     "onboarding.continue": "Continue",
     "onboarding.selectFolder": "Select Folder",
@@ -197,10 +197,10 @@ private let englishStrings: [String: String] = [
     "onboarding.directoryHint":
         "Grant access to directories where your language versions are installed",
     "onboarding.directoryList": "Recommended directories to authorize:",
-    "onboarding.accessNote": "Access is required for RuntimePilot to scan and manage your versions",
+    "onboarding.accessNote": "Access is required for SYFLV to scan and manage your versions",
     "onboarding.selected": "selected",
     "directoryAccess.panelMessage":
-        "Select a directory to grant RuntimePilot access for scanning installed versions.",
+        "Select a directory to grant SYFLV access for scanning installed versions.",
 
     // Settings
     "settings.title": "Settings",
@@ -282,7 +282,7 @@ private let englishStrings: [String: String] = [
     "menu.tools": "Tools",
     "menu.refreshAll": "Refresh All",
     "menu.manageDirectoryAccess": "Manage Directory Access...",
-    "menu.about": "About RuntimePilot",
+    "menu.about": "About SYFLV",
 
     // Version Switch Toast
     "versionSwitch.title": "Version Switched",
@@ -319,10 +319,10 @@ private let chineseStrings: [String: String] = [
     "dashboard.active": "已激活",
     "dashboard.installed": "已安装",
     "dashboard.languages": "语言",
-    "dashboard.welcome": "欢迎使用 RuntimePilot",
+    "dashboard.welcome": "欢迎使用 SYFLV",
     "dashboard.setupSteps": "3 步完成设置",
     "dashboard.step1.title": "授权访问",
-    "dashboard.step1.desc": "允许 RuntimePilot 扫描版本目录",
+    "dashboard.step1.desc": "允许 SYFLV 扫描版本目录",
     "dashboard.step2.title": "扫描版本",
     "dashboard.step2.desc": "自动检测已安装的版本",
     "dashboard.step3.title": "切换版本",
@@ -396,9 +396,9 @@ private let chineseStrings: [String: String] = [
     "shared.shellSetup": "Shell 配置",
 
     // Onboarding
-    "onboarding.welcome": "欢迎使用 RuntimePilot",
+    "onboarding.welcome": "欢迎使用 SYFLV",
     "onboarding.grantAccess": "授予访问权限",
-    "onboarding.needsAccess": "RuntimePilot 需要访问以下目录来扫描版本：",
+    "onboarding.needsAccess": "SYFLV 需要访问以下目录来扫描版本：",
     "onboarding.skipForNow": "暂时跳过",
     "onboarding.continue": "继续",
     "onboarding.selectFolder": "选择文件夹",
@@ -409,9 +409,9 @@ private let chineseStrings: [String: String] = [
     "onboarding.languageHint": "您可以随时在侧边栏中添加或移除语言",
     "onboarding.directoryHint": "授权访问安装了语言版本的目录",
     "onboarding.directoryList": "推荐授权的目录：",
-    "onboarding.accessNote": "RuntimePilot 需要访问权限来扫描和管理您的版本",
+    "onboarding.accessNote": "SYFLV 需要访问权限来扫描和管理您的版本",
     "onboarding.selected": "已选择",
-    "directoryAccess.panelMessage": "选择要授权 RuntimePilot 扫描版本的目录。",
+    "directoryAccess.panelMessage": "选择要授权 SYFLV 扫描版本的目录。",
 
     // Settings
     "settings.title": "设置",
@@ -490,7 +490,7 @@ private let chineseStrings: [String: String] = [
     "menu.tools": "工具",
     "menu.refreshAll": "刷新全部",
     "menu.manageDirectoryAccess": "管理目录访问权限...",
-    "menu.about": "关于 RuntimePilot",
+    "menu.about": "关于 SYFLV",
 
     // Version Switch Toast
     "versionSwitch.title": "版本已切换",

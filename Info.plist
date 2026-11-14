@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleExecutable</key>
-    <string>RuntimePilot</string>
+    <string>SYFLV</string>
     <key>CFBundleIdentifier</key>
     <string>com.runtimepilot.app</string>
     <key>CFBundleName</key>
     <string>SYFLV</string>
     <key>CFBundleDisplayName</key>
-    <string>Switch Your Fucking Language Version</string>
+    <string>SYFLV</string>
     <key>CFBundleVersion</key>
-    <string>2</string>
+    <string>3</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.1</string>
+    <string>1.0.2</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>LSMinimumSystemVersion</key>
@@ -25,7 +25,7 @@
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
     <key>NSHumanReadableCopyright</key>
-    <string>Copyright © 2026 RuntimePilot. All rights reserved.</string>
+    <string>Copyright © 2026 SYFLV. All rights reserved.</string>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
 </dict>

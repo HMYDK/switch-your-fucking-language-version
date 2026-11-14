@@ -7,7 +7,7 @@ let package = Package(
         .macOS(.v13)
     ],
     products: [
-        .executable(name: "RuntimePilot", targets: ["RuntimePilot"]),
+        .executable(name: "SYFLV", targets: ["RuntimePilot"]),
         .library(name: "RuntimePilotCore", targets: ["RuntimePilotCore"]),
     ],
     targets: [

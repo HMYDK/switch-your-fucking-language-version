@@ -2,7 +2,7 @@
 
 set -e
 
-APP_NAME="RuntimePilot"
+APP_NAME="SYFLV"
 # 从 Info.plist 读取版本号（单一版本源）
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Info.plist)
 echo "📋 Version: $VERSION"

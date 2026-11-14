@@ -85,13 +85,12 @@ jobs:
       run: |
         APP_NAME="RuntimePilot"
         VERSION="${{ steps.get_version.outputs.VERSION }}"
-        BUILD_DIR=".build/release"
-        APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
+        APP_BUNDLE=".build/release/$APP_NAME.app"
         ZIP_NAME="$APP_NAME-$VERSION.zip"
 
-        cd "$BUILD_DIR"
-        zip -r "../../$ZIP_NAME" "$APP_NAME.app"
-        cd ../..
+        # 不要 cd 进 .build/release：.build/release 是符号链接，
+        # 相对路径会把 zip 写到 .build 下，导致 release action 找不到文件。
+        ditto -c -k --sequesterRsrc --keepParent "$APP_BUNDLE" "$ZIP_NAME"
 
         echo "ZIP created: $ZIP_NAME"
         echo "ZIP_PATH=$ZIP_NAME" >> $GITHUB_ENV
